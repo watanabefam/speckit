@@ -2,6 +2,36 @@
 
 **Branch**: `007-plain-language` | **Date**: 2026-10-24 | **Spec**: `specs/007-plain-language/spec.md`
 
+## In Plain Terms
+
+This plan adds one required, informative section to each specification — a paragraph, a row per
+requirement, and the document's own terms — and one checker that keeps it honest. The checker is a pure
+read of a single file: it collects the identifiers into a coverage report (every identifier appearing in
+the explanation table) and requires a bracketed gloss (a short explanation right after the word it
+explains) for each listed term. The gate then runs it over every specification and over a fixture for
+each failure shape, because a rule that nothing runs rots within a release.
+
+| Item | In plain words | Technical |
+| --- | --- | --- |
+| FR-001–FR-003 | The section, its opening paragraph and its two tables are required by the spec template, so the guidance arrives with the preset rather than from a skill. | `preset/templates/spec-addendum.md`; §Architecture Overview |
+| FR-004–FR-005 | Every requirement is covered once; a gap, a repeat or an invented identifier is a failure with the identifier named. | `scripts/check-plain-terms.py` coverage; §Correctness Properties P-001 |
+| FR-006–FR-007 | The explanation may describe but not command, and stays short enough to scan, so it cannot become a second specification. | `NORMATIVE_RE`, `PLAIN_LIMIT`; §Architecture Overview |
+| FR-008–FR-009 | The document lists its own specialist words and brackets each one where a reader first meets it, instead of relying on a global dictionary. | terms parse; `GLOSS_LIMIT` in `scripts/check-plain-terms.py` |
+| FR-010 | The check is a standalone script installed into every adopter project and run by the gate, so the rule reaches projects outside this repository. | `bin/speckit-init`; `scripts/self-gate.sh` §3e |
+| FR-011 | Each failure shape has its own small broken spec, and the gate proves rejection by exit code and named finding. | `evals/fixtures/plain-terms/`; §Validation Strategy |
+| FR-012 | The rule is written where the agent actually reads it — the contributions to `specify`, `plan`, `tasks`, `implement` and `converge`, plus the bridge. | `preset/commands/*.prepend.md`; `bin/speckit-init` |
+| FR-013 | No readability score is gated and no comprehension is claimed, because the evidence does not support either. | `docs/research/plain-language-2026-10.md` §6; script header |
+| FR-034 | The earlier feature's coverage-silence rule is deliberately left alone, so this layer cannot change what a green result means. | `specs/005-verification-integrity/plan.md`; §Implementation Boundaries |
+| SC-002 | A spec that is structurally perfect but has no plain layer is rejected, demonstrated on a peer project's specification. | `scripts/check-plain-terms.py`; `.scratch/peers/citekit/specs/001-web-search-source/spec.md` |
+| SC-005 | Adding a requirement without a row fails the gate and names the identifier. | `scripts/self-gate.sh` §3e; §Validation Strategy |
+
+**Terms**
+
+| Term | Plain words |
+| --- | --- |
+| coverage | every identifier in the document appearing in the explanation table |
+| gloss | a short explanation in brackets, right after the word it explains |
+
 ## Summary
 
 Add a required, informative `## In Plain Terms` section to every specification — a short paragraph, an

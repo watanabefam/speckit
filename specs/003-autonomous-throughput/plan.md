@@ -6,6 +6,43 @@
 
 **Note**: This plan is filled in by `/speckit.plan`; its definition describes the execution workflow.
 
+## In Plain Terms
+
+This plan moves the approval boundary out of prose and into the tools: a permission boundary (a list of
+commands the assistant may not run, refused by the tool rather than by the assistant's judgement) is
+written into `opencode.json` by the installer, so a force-push or a publish is refused without anyone
+being asked. It also gives every project one recorded verification command, lets approved work run to the
+end of its list under an execution budget, and adds a ledger (the append-only file recording what
+completed and on what evidence) so an interrupted run can resume without repeating work. Every mechanism
+already exists in the kit — a copy step, a managed block, a command file — so the plan reuses them rather
+than adding a new kind of artifact.
+
+| Item | In plain words | Technical |
+| --- | --- | --- |
+| US1 | Dangerous commands are refused by the tool, so a routine change needs no reassurance from a person. | `opencode.json`; §Architecture Overview |
+| US2 | There is one command that verifies the project, and every task names it instead of inventing one. | `scripts/verify`; `AGENTS.md` Commands block |
+| US3 | Approved work runs to the end of the list and stops on a stated condition rather than guessing. | `preset/commands/speckit.implement.prepend.md`; §Major Components |
+| US4 | A small fix skips the planning artifacts, and a defect still starts from a failing test. | `commands/speckit.quick.md`; §Design Decisions |
+| FR-001–FR-002 | The installer creates the permission block when it is absent and leaves an owner's existing configuration alone. | `bin/speckit-init` §2d; §Repository Findings |
+| FR-003 | When two rules disagree, the refusal wins, because a guard that can be talked out of refusing is not a guard. | `opencode.json` precedence; §Design Decisions |
+| FR-004 | There is one autonomy contract, pointed at from the bridge, and the commands do not repeat its rules. | `.opencode/autonomy-contract.md`; `bin/speckit-init` |
+| FR-005–FR-006 | The project's commands are detected and recorded; a failed detection is written down and asked about instead of guessed. | `AGENTS.md` Commands block; §Design Decisions |
+| FR-007 | A task names the recorded command, so the same command is run by every task in the project. | `scripts/verify`; `preset/templates/tasks-addendum.md` |
+| FR-008 | Approved work is not interrupted by a prompt at every phase boundary. | `speckit.implement.prepend.md`; §Scope Confirmation |
+| FR-009 | When the failure budget is spent the run halts and leaves the unfinished tasks unticked. | `speckit.implement.prepend.md`; §Correctness Properties |
+| FR-010 | Completing a task commits it and appends one ledger line, so the record and the code move together. | `bin/speckit-resume`; §Data Flow |
+| FR-011–FR-013 | Small work takes the short path, a defect still needs a failing test first, and a change that outgrows the lane is promoted rather than finished there. | `commands/speckit.quick.md`; `commands/speckit.md` §3 |
+| FR-014–FR-015 | The gate checks a scratch install for the artifacts, and an edited managed block is reported instead of overwritten. | `scripts/self-gate.sh`; `bin/speckit-init` |
+| SC-002 | Every irreversible action on the list is refused in an unattended run, proved by executing the guard rather than reading it. | `scripts/self-gate.sh` probe; §Validation Strategy |
+
+**Terms**
+
+| Term | Plain words |
+| --- | --- |
+| permission boundary | the tool-level list of commands that are refused regardless of what the assistant decides |
+| execution budget | a fixed number of consecutive failures, after which a run halts and reports |
+| ledger | the append-only file that records which tasks completed and on what evidence |
+
 ## Summary
 
 Move the kit's approval boundary from prompt prose into a mechanical permission block installed by

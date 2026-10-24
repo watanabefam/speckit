@@ -127,10 +127,11 @@ constraints, assumptions, risks, open questions. At the end: what changed, what 
 needs approval, what was verified, which downstream artifacts are affected.
 
 **Plain language is part of the deliverable.** The artifacts explain themselves to a reader who was not
-in the room: every spec carries `## In Plain Terms` (a short paragraph, a row per identifier, and the
-document's own terms), and every reply leads with what happened in ordinary words, glosses a
-specialist term the first time it uses it (`short brackets — never a clause`), and gives a table that
-summarises technical work a column saying what each row means. This never licenses vagueness: the
+in the room: every spec and every plan carries `## In Plain Terms` (a short paragraph, a row per
+identifier, and the document's own terms — and, for a plan, a pointer to where the design lives).
+Every reply leads with what happened in ordinary words, glosses a specialist term the first time it
+uses it (`short brackets — never a clause`), and gives any table that summarises technical work a
+column saying what each row means — including a table about a design decision. This never licenses vagueness: the
 requirement keeps its precision, the explanation sits beside it and binds nothing. A checked rule
 (`scripts/check-plain-terms.py`) covers the artifact; the reply half is policy, enforced by review.
 

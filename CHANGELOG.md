@@ -93,6 +93,33 @@ ESLint's unused suppressions and RuboCop's `--report-unused-todo-entries` apply.
 non-empty. `003` needed one heading, `001` nineteen. Content is derived from each spec's own text or is
 an explicit non-applicability with a reason; no new claims were added to fill a section.
 
+## [1.18.0] — 2026-10-24
+
+### Added — plans explain their design, beside the requirements
+
+`plan.md` now carries the same `## In Plain Terms` section a specification does: a short paragraph, an
+identifier-keyed table, and the plan's own mechanism words. The section is placed **before
+`## Technical Context`**, and its rows are written as **design decisions** — what was chosen and what it
+buys — because that is the part a newcomer cannot supply; a row that restates the requirement is a
+defect in the explanation.
+
+- **One checker, two modes.** `scripts/check-plain-terms.py` gains `--kind auto|spec|plan` (auto by file
+  name). Coverage, the normative-keyword ban, the 45-word cell cap and the 25-word gloss cap are shared;
+  the plan adds placement, a three-sentence paragraph, and one new rule: the `Technical` cell must name a
+  section (`§…`) or a backticked artefact, so a row points at the design rather than back at the spec.
+- **Why not a plain column in the existing tables.** Those tables differ per plan and are absent in two,
+  so there would be no paragraph, no terms table and seven shapes to special-case. One shape across both
+  artifacts is one habit and one contract.
+- **Evidence, and its limit.** The format of a design document showed **no measurable effect** on
+  understanding (Ernst & Robillard 2023, N=65); the presence of design decisions and their rationale did
+  (Shahin et al. 2014, as reported by Rukmono et al. 2025). So the check verifies structure, coverage and
+  defined terms — it does not claim comprehension, and no readability score is gated.
+
+Six accepted plans are retrofitted (the seventh, this feature's own, carries the section from the
+start). Spec `008`, `decisions/0008`, research companion
+`docs/research/plans-plain-language-2026-10.md`; gate §3f adds 26 assertions over the plan corpus, six
+fixtures, two teeth checks, the harness and the policy surfaces.
+
 ## [1.17.0] — 2026-10-24
 
 ### Added — every specification explains itself, and the explanation is checked

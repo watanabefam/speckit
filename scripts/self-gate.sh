@@ -1576,10 +1576,11 @@ if [ -f "$CPT" ]; then
   # The generated properties: 8 cases and 4 properties, one line each.
   if _pt="$(python3 "$ROOT/evals/fixtures/plain-terms/harness.py" --all 2>&1)"; then
     _pn="$(printf '%s\n' "$_pt" | grep -c '^  ok ')"
-    if [ "$_pn" -ge 66 ]; then
+    # 66 spec checks, then 6 plan cases and 19 plan property checks (feature 008).
+    if [ "$_pn" -ge 91 ]; then
       ok "plain-terms harness: $_pn generated and fixture checks pass"
     else
-      bad "plain-terms harness passed only $_pn checks (expected 66)"
+      bad "plain-terms harness passed only $_pn checks (expected 91)"
     fi
   else
     bad "plain-terms harness failed: $(printf '%s\n' "$_pt" | grep 'FAIL' | head -3 | tr '\n' ' ')"
@@ -1619,6 +1620,104 @@ if [ -f "$PEER_SPEC" ] && [ -f "$CPT" ]; then
   fi
 else
   skip 'no peer spec in .scratch/peers (the peer sweep is not part of a fresh checkout)'
+fi
+
+hdr "3f. plain plans — a design a newcomer can follow"
+# The same script, in its second mode (`decisions/0008`). The plan template demands the section, the
+# corpus explains its design, six plan fixtures are rejected for their own reasons, and two teeth checks
+# prove the mode is a real branch rather than a flag that changes the banner.
+PLAN_TEMPLATE="$ROOT/preset/templates/plan-addendum.md"
+if [ -f "$CPT" ] || [ -f "$ROOT/scripts/check-plain-terms.py" ]; then
+  CPT="$ROOT/scripts/check-plain-terms.py"
+  if grep -q '^## In Plain Terms' "$PLAN_TEMPLATE" 2>/dev/null; then
+    ok "the plan template requires the section"
+  else
+    bad "the plan template no longer requires '## In Plain Terms' — plans would have no contract to fill"
+  fi
+
+  # The standing corpus: every plan must explain its design.
+  _plans=0; _plan_fail=0
+  for _plan in "$ROOT"/specs/*/plan.md; do
+    [ -f "$_plan" ] || continue
+    _plans=$((_plans + 1))
+    if ! python3 "$CPT" "$_plan" >/dev/null 2>&1; then
+      _plan_fail=$((_plan_fail + 1))
+      printf '        %s\n' "$(python3 "$CPT" "$_plan" 2>&1 | head -3)"
+    fi
+  done
+  if [ "$_plan_fail" -eq 0 ] && [ "$_plans" -gt 0 ]; then
+    ok "all $_plans plans name the design beside their requirements"
+  else
+    bad "plain plans: $_plan_fail of $_plans plans do not explain their design"
+  fi
+
+  # Each plan failure shape on its own fixture. A checker that accepted everything would look exactly
+  # like a clean corpus, so the six defects are rejected here, by name.
+  for _probe in "plan-good:0:rows" "plan-no-section:1:missing" \
+                "plan-misplaced:1:does not come before '## Technical Context'" \
+                "plan-thin-paragraph:1:fewer than 3 sentences" \
+                "plan-no-artefact:1:names no section (§) or file" \
+                "plan-unglossed:1:no bracketed gloss"; do
+    _name="${_probe%%:*}"; _rest="${_probe#*:}"; _want="${_rest%%:*}"; _needle="${_rest#*:}"
+    if _out="$(python3 "$CPT" "$ROOT/evals/fixtures/plain-terms/$_name/plan.md" 2>&1)"; then _rc=0; else _rc=$?; fi
+    if [ "$_rc" = "$_want" ] && printf '%s' "$_out" | grep -qF "$_needle"; then
+      ok "plan fixture '$_name' exits $_want for the stated reason"
+    else
+      bad "plan fixture '$_name' exited $_rc, expected $_want with '$_needle'"
+    fi
+  done
+
+  # Teeth on a real document: strip the section from a copy of a real plan and require rejection.
+  _pteeth="$(mktemp -d)"
+  _planfile="$(ls "$ROOT"/specs/*/plan.md 2>/dev/null | head -1 || true)"
+  if [ -n "$_planfile" ]; then
+    awk 'BEGIN{drop=0} /^## In Plain Terms[[:space:]]*$/{drop=1; next} /^## /{drop=0} !drop' \
+      "$_planfile" > "$_pteeth/plan.md"
+    if python3 "$CPT" "$_pteeth/plan.md" >/dev/null 2>&1; then
+      bad "the checker accepted a real plan with its explanation removed"
+    else
+      ok "the checker rejects a real plan with its explanation removed"
+    fi
+  fi
+  rm -rf "$_pteeth"
+
+  # Mode is a branch, not a banner: a spec-shaped document under plan rules must fail the three-sentence
+  # rule. If this passes, `--kind plan` changed nothing and the plan checks are not running.
+  if python3 "$CPT" --kind plan "$ROOT/evals/fixtures/plain-terms/good/spec.md" >/dev/null 2>&1; then
+    bad "--kind plan accepted a spec-shaped document — the plan rules are not applied"
+  else
+    ok "--kind plan applies the plan rules to a spec-shaped document"
+  fi
+
+  # The rule must be present where the agent reads it, for plans as for specs.
+  while IFS='|' read -r _surface _needle; do
+    [ -n "$_surface" ] || continue
+    if grep -qF "$_needle" "$ROOT/$_surface" 2>/dev/null; then
+      ok "plan-language rule present in $_surface"
+    else
+      bad "plan-language rule missing from $_surface (expected '$_needle')"
+    fi
+  done <<'PLANSURFACES'
+preset/templates/plan-addendum.md|row states the design choice and its reason
+preset/commands/speckit.plan.prepend.md|Fill `## In Plain Terms` as you design
+commands/speckit.md|every spec and every plan carries
+skill/spec-driven-development/SKILL.md|Specs and plans carry
+global/autonomy-contract.md|Name where a design lives
+bin/speckit-init|every plan carries
+PLANSURFACES
+
+  # A peer project's plan: well structured, no plain layer, no requirement ids. It is the negative
+  # control a corpus of retrofitted plans cannot provide.
+  PEER_PLAN="$ROOT/.scratch/peers/citekit/specs/001-web-search-source/plan.md"
+  if [ -f "$PEER_PLAN" ]; then
+    if python3 "$CPT" "$PEER_PLAN" >/dev/null 2>&1; then
+      bad "the checker accepted a peer plan that has no plain layer"
+    else
+      ok "the checker rejects a peer plan that has no plain layer"
+    fi
+  else
+    skip 'no peer plan in .scratch/peers (the peer sweep is not part of a fresh checkout)'
+  fi
 fi
 
 hdr "1h. CiteKit MCP registration is optional, and skips cleanly"

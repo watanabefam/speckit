@@ -26,28 +26,51 @@ WHAT IT CHECKS
    introduced to the vocabulary here, and the metadata block — which may quote the requester verbatim —
    is not where a gloss belongs.
 
+A PLAN IS CHECKED FOR THE SAME THINGS, PLUS A POINTER
+The `plan.md` artifact carries the same section and columns, and rules 4-7 apply unchanged. Three
+things differ, and each exists because a plan is a design rather than a set of obligations (see
+`decisions/0008-plans-explain-the-design.md`):
+
+- **Placement.** The section must come before `## Technical Context` (or, where that heading is
+  absent, before the first top-level section other than `## Summary`) — the guide level before the
+  reference level.
+- **The paragraph.** Three sentences, not two: a plan has to say what will be built, out of what,
+  and why this shape.
+- **The `Technical` cell.** It must name a section (`§…`) or a backticked artefact, and may not
+  consist only of identifiers. A spec row points at the requirement it stands for; a plan row that
+  did the same would send the reader back to the spec and say nothing about the design.
+
+The mode is chosen by file name (`plan.md`), with `--kind` to override it. Mode affects those three
+rules only; coverage, brevity, the keyword ban and the gloss rules are shared, so the two artifacts
+cannot drift apart.
+
 WHAT IT CANNOT DO
 It cannot tell whether an explanation is correct, whether it says anything the requirement does not
-already say, or whether a reader understood it. There is no oracle for those, and the evidence says a
-readability score would be a false one (AHRQ, Schriver, Redish —
-`docs/research/plain-language-2026-10.md` §6). A covered-but-wrong row is a review finding, not a gate
-failure. That limit is the reason this script checks coverage rather than quality.
+already say, or whether a reader understood it. Nor can it tell whether a plan row states the design
+choice rather than restating the requirement: that is the template's content rule, and review.
+
+There is no oracle for either, and the evidence says a readability score would be a false one (AHRQ,
+Schriver, Redish — `docs/research/plain-language-2026-10.md` §6). A covered-but-wrong row is a review
+finding, not a gate failure. That limit is the reason this script checks coverage rather than quality.
 
 VACUITY
 A spec with the section but no rows fails as "nothing was examined", and so does a spec with no
 identifiers at all. An empty table is the shape a ritual takes, and a check that passes on nothing is
 not a check (the rule 005 states for the gate applies here).
 
-Usage: check-plain-terms.py [--json] <spec.md> [<spec.md> ...]
+Usage: check-plain-terms.py [--json] [--kind auto|spec|plan] <file> [...]
 Exit:  0 = every file conformant · 1 = at least one finding · 2 = usage or read error.
 """
 from __future__ import annotations
 
 import json
+import os
 import re
 import sys
 
 SECTION_RE = re.compile(r"^##\s+In Plain Terms\s*$")
+PLAN_CONTEXT_RE = re.compile(r"^##\s+Technical Context\s*$")
+SUMMARY_RE = re.compile(r"^##\s+Summary\s*$")
 HEADING_RE = re.compile(r"^(#{1,6})\s")
 STORY_RE = re.compile(r"^###\s+User Story\s+(\d+)\b")
 IDENT_RE = re.compile(r"\b(FR|SC)-(\d{3})\b")
@@ -60,6 +83,10 @@ PLAIN_LIMIT = 45
 GLOSS_LIMIT = 25
 NORMATIVE_RE = re.compile(r"\b(SHALL|MUST|SHOULD)\b")
 
+# The minimum opening paragraph, per artifact kind. A plan has one more job than a spec: it says what
+# will exist, not only what is owed.
+MIN_SENTENCES = {"spec": 2, "plan": 3}
+
 REQUIRED_COLUMNS = ("item", "in plain words", "technical")
 TERM_COLUMNS = ("term", "plain words")
 
@@ -70,6 +97,18 @@ class Finding:
 
     def __str__(self) -> str:
         return f"{self.path}: {self.kind}: {self.detail}"
+
+
+def artifact_kind(path: str, override: str = "auto") -> str:
+    """Which rule set applies. `--kind` wins; otherwise a `plan.md` basename means a plan.
+
+    A file name is a weak signal, so the override exists and the template names it. Guessing from
+    content was rejected: a plan that happens to lack `## Technical Context` would silently fall
+    back to spec rules and pass under a contract it was never written against.
+    """
+    if override in MIN_SENTENCES:
+        return override
+    return "plan" if os.path.basename(path).lower() == "plan.md" else "spec"
 
 
 def norm(cell: str) -> str:
@@ -194,7 +233,28 @@ def gloss_after(paragraph: str, start: int) -> tuple[str, int] | None:
     return content, len(content.split())
 
 
-def check_file(path: str) -> tuple[list[Finding], dict]:
+def has_artefact(cell: str) -> bool:
+    """A plan's Technical cell must point somewhere a reader can go: a section or a backticked path.
+
+    The raw cell is inspected, not `norm()`ed, because normalisation strips the backticks this rule
+    exists to find. An identifier alone is deliberately not enough: it is what the spec row already
+    says, and it sends the reader back rather than into the design.
+    """
+    return "§" in cell or "`" in cell
+
+
+def plan_placement_ok(lines: list[str], start: int) -> bool:
+    """Above `## Technical Context`; failing that, nothing but `## Summary` may precede it."""
+    context = next((i for i, l in enumerate(lines) if PLAN_CONTEXT_RE.match(l)), None)
+    if context is not None:
+        return start < context
+    for line in lines[:start]:
+        if HEADING_RE.match(line) and line.startswith("## ") and not SUMMARY_RE.match(line):
+            return False
+    return True
+
+
+def check_file(path: str, kind: str = "spec") -> tuple[list[Finding], dict]:
     findings: list[Finding] = []
     try:
         with open(path, encoding="utf-8") as fh:
@@ -207,14 +267,21 @@ def check_file(path: str) -> tuple[list[Finding], dict]:
 
     span = find_section(lines)
     if span is None:
-        findings.append(Finding(path, "no-section", "missing '## In Plain Terms' (see the spec template)"))
+        findings.append(Finding(path, "no-section",
+                                f"missing '## In Plain Terms' (see the {kind} template)"))
         return findings, table
     start, end = span
 
-    # Placement: the explanation comes before the first story.
-    story_at = next((i for i, l in enumerate(lines) if STORY_RE.match(l)), None)
-    if story_at is not None and story_at < start:
-        findings.append(Finding(path, "placement", "the section comes after the first '### User Story' heading"))
+    # Placement: the explanation comes before the detail it explains.
+    if kind == "plan":
+        if not plan_placement_ok(lines, start):
+            findings.append(Finding(path, "placement",
+                                    "the section does not come before '## Technical Context'"))
+    else:
+        story_at = next((i for i, l in enumerate(lines) if STORY_RE.match(l)), None)
+        if story_at is not None and story_at < start:
+            findings.append(Finding(path, "placement",
+                                    "the section comes after the first '### User Story' heading"))
 
     body = [COMMENT_RE.sub("", l) for l in lines[start + 1:end]]
     tables = parse_tables(body)
@@ -230,8 +297,9 @@ def check_file(path: str) -> tuple[list[Finding], dict]:
     # The paragraph before the first table.
     first_table = next((i for i, l in enumerate(body) if l.strip().startswith("|")), len(body))
     prose = " ".join(l.strip() for l in body[:first_table] if l.strip())
-    if sentence_count(prose) < 2:
-        findings.append(Finding(path, "no-summary", "the section opens with fewer than two sentences of prose"))
+    if sentence_count(prose) < MIN_SENTENCES[kind]:
+        findings.append(Finding(path, "no-summary",
+                                f"the section opens with fewer than {MIN_SENTENCES[kind]} sentences of prose"))
 
     # Identifiers the document uses. The section itself is excluded: a row mentioning an id must not
     # be what makes that id exist, or the table would validate itself.
@@ -239,8 +307,11 @@ def check_file(path: str) -> tuple[list[Finding], dict]:
     doc_ids: set[str] = set()
     for line in body_lines:
         scan = INLINE_CODE_RE.sub("", line)   # `FR-044` in an example is not a requirement
-        for m in IDENT_RE.finditer(scan):
-            doc_ids.add(f"{m.group(1)}-{m.group(2)}")
+        # Expand closed ranges here too. A plan that says "covers FR-001–FR-012" in one line has
+        # declared twelve requirements, and a plan's one-line scope statement is exactly how the
+        # legacy plans name what they serve. Collecting only the range's endpoints would let eleven
+        # of the twelve go uncovered while the table looked complete.
+        doc_ids.update(expand_item(scan, [], path, "body"))
         m = STORY_RE.match(scan)
         if m:
             doc_ids.add(f"US{int(m.group(1))}")
@@ -256,11 +327,15 @@ def check_file(path: str) -> tuple[list[Finding], dict]:
             where = f"row {n + 1}"
             item = row[plain_idx["item"]] if len(row) > plain_idx["item"] else ""
             plain = row[plain_idx["in plain words"]] if len(row) > plain_idx["in plain words"] else ""
+            technical = row[plain_idx["technical"]] if len(row) > plain_idx["technical"] else ""
             if not item.strip():
                 findings.append(Finding(path, "empty-item", f"{where}: no identifier"))
             if not plain.strip():
                 findings.append(Finding(path, "empty-plain", f"{where}: no explanation"))
                 continue
+            if kind == "plan" and not has_artefact(technical):
+                findings.append(Finding(path, "no-artefact",
+                                        f"{where}: the Technical cell names no section (§) or file"))
             for ident in expand_item(item, findings, path, where):
                 covered[ident] = covered.get(ident, 0) + 1
             width = len(plain.split())
@@ -325,15 +400,36 @@ def check_file(path: str) -> tuple[list[Finding], dict]:
 
 def main(argv: list[str]) -> int:
     as_json = "--json" in argv
-    paths = [a for a in argv if a != "--json"]
+    kind = "auto"
+    rest: list[str] = []
+    i = 0
+    while i < len(argv):
+        arg = argv[i]
+        if arg == "--kind":
+            if i + 1 >= len(argv):
+                print("check-plain-terms: --kind needs a value (auto, spec or plan)", file=sys.stderr)
+                return 2
+            kind = argv[i + 1]
+            i += 2
+            continue
+        if arg.startswith("--kind="):
+            kind = arg.split("=", 1)[1]
+        elif arg != "--json":
+            rest.append(arg)
+        i += 1
+
+    if kind not in ("auto", "spec", "plan"):
+        print(f"check-plain-terms: unknown --kind '{kind}' (auto, spec or plan)", file=sys.stderr)
+        return 2
+    paths = rest
     if not paths:
         print(__doc__.strip().splitlines()[-1], file=sys.stderr)
-        print("usage: check-plain-terms.py [--json] <spec.md> [...]", file=sys.stderr)
+        print("usage: check-plain-terms.py [--json] [--kind auto|spec|plan] <file> [...]", file=sys.stderr)
         return 2
 
     reports, failed = [], False
     for path in paths:
-        findings, table = check_file(path)
+        findings, table = check_file(path, artifact_kind(path, kind))
         forced = len(findings) > 0
         failed = failed or forced
         reports.append({"table": table, "findings": [str(f) for f in findings], "ok": not forced})

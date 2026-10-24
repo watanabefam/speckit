@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """Fixture harness for `scripts/check-plain-terms.py`.
 
-Eight fixtures, each of which must fail (or pass, for the control) for one named reason, plus four
-properties that generate documents instead of reading them. The discipline is the one
+Fourteen fixtures — eight specifications, six plans — each of which must fail (or pass, for the
+control) for one named reason, plus nine properties that generate documents instead of reading them. The discipline is the one
 `evals/fixtures/verify/harness.py` already uses: a check that has never been observed failing is not
 evidence, so every failure shape below was written before the checker was.
 
@@ -40,6 +40,18 @@ CASES = {
     "vacuous": (1, "nothing was examined"),
 }
 
+# Plan fixtures are separate because their rule set differs: placement before the technical context, a
+# three-sentence paragraph, and an artefact reference in every row. Each file is named `plan.md`, which
+# is also the assertion that auto-detection works without a flag.
+PLAN_CASES = {
+    "plan-good": (0, "ok"),
+    "plan-no-section": (1, "missing '## In Plain Terms'"),
+    "plan-misplaced": (1, "does not come before '## Technical Context'"),
+    "plan-thin-paragraph": (1, "fewer than 3 sentences"),
+    "plan-no-artefact": (1, "names no section (§) or file"),
+    "plan-unglossed": (1, "has no bracketed gloss"),
+}
+
 failures: list[str] = []
 checks = 0
 
@@ -71,6 +83,20 @@ def run_case(name: str) -> None:
     report(
         proc.returncode == want_exit and needle in out,
         f"case {name}",
+        f"exit {proc.returncode} (want {want_exit}), output: {out.strip()[:200]}",
+    )
+
+
+def run_plan_case(name: str) -> None:
+    want_exit, needle = PLAN_CASES[name]
+    path = HERE / name / "plan.md"
+    proc = subprocess.run(
+        [sys.executable, str(CHECKER), str(path)], capture_output=True, text=True
+    )
+    out = proc.stdout + proc.stderr
+    report(
+        proc.returncode == want_exit and needle in out,
+        f"plan case {name}",
         f"exit {proc.returncode} (want {want_exit}), output: {out.strip()[:200]}",
     )
 
@@ -108,13 +134,59 @@ def build(ids: list[str], rows: list[tuple[str, str, str]], terms=("fixture-valu
     return "\n".join(lines) + "\n"
 
 
-def check_text(module, text: str):
+def check_text(module, text: str, kind: str = "spec"):
     with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False) as fh:
         fh.write(text)
         path = fh.name
-    findings, table = module.check_file(path)
+    findings, table = module.check_file(path, kind)
     Path(path).unlink()
     return findings, table
+
+
+PLAN_FILLER = [
+    "It is generated, and it names no real design.",
+    "The third sentence says why the shape was chosen.",
+    "A fourth sentence is more than the rule asks for.",
+    "A fifth sentence is also allowed.",
+]
+
+
+def build_plan(ids: list[str], rows=None, technical: str = "§Generated",
+               term: str = "widget", gloss: str = "a generated word",
+               sentences: int = 3, placement: str = "before",
+               body_line: str | None = None) -> str:
+    """A generated plan. `placement` is `before`, `after`, or `after-summary`.
+
+    The first sentence always introduces the term with its gloss, so a property that varies the
+    paragraph length cannot accidentally break the terms rule instead of the rule under test.
+    """
+    para = [f"The {term} ({gloss}) is checked here."]
+    while len(para) < max(sentences, 1):
+        para.append(PLAN_FILLER[(len(para) - 1) % len(PLAN_FILLER)])
+    if rows is None:
+        rows = [(ident, f"What was chosen for {ident}, and why.", technical) for ident in ids]
+
+    section = ["## In Plain Terms", "", " ".join(para), "",
+               "| Item | In plain words | Technical |", "| --- | --- | --- |"]
+    for item, plain, tech in rows:
+        section.append(f"| {item} | {plain} | {tech} |")
+    section += ["", "**Terms**", "", "| Term | Plain words |", "| --- | --- |",
+                f"| {term} | {gloss} |", ""]
+
+    lines = ["# Generated plan", ""]
+    if placement == "after-summary":
+        lines += ["## Summary", "A generated summary of the plan.", ""] + section
+    if placement == "before":
+        lines += section
+    lines += ["## Technical Context", "- Generated details.", "", "## Architecture", ""]
+    if body_line is not None:
+        lines.append(body_line)
+    else:
+        for ident in ids:
+            lines.append(f"- **{ident}**: Generated requirement line.")
+    if placement == "after":
+        lines += [""] + section
+    return "\n".join(lines) + "\n"
 
 
 def kinds(findings) -> list[str]:
@@ -217,7 +289,69 @@ def p_004(module, rng: random.Random) -> None:
            str(kinds(findings)))
 
 
-PROPERTIES = {"P-001": p_001, "P-002": p_002, "P-003": p_003, "P-004": p_004}
+def p_005(module, rng: random.Random) -> None:
+    """A plan row must point at a section or a file; an identifier alone is not a pointer."""
+    for technical, want in (("FR-001", False), ("SC-001, FR-001", False),
+                            ("§Generated", True), ("`bin/gate`", True),
+                            ("`bin/gate`; §Generated", True)):
+        findings, _ = check_text(module, build_plan(["FR-001"], technical=technical), "plan")
+        got = "no-artefact" not in kinds(findings)
+        report(got is want, f"P-005 Technical '{technical}' -> {'pass' if want else 'fail'}",
+               str(kinds(findings)))
+
+
+def p_006(module, rng: random.Random) -> None:
+    """The explanation comes before the technical context, or after nothing but the summary."""
+    for placement, want in (("before", True), ("after-summary", True), ("after", False)):
+        findings, _ = check_text(module, build_plan(["FR-001"], placement=placement), "plan")
+        got = "placement" not in kinds(findings)
+        report(got is want, f"P-006 placement '{placement}' -> {'pass' if want else 'fail'}",
+               str(kinds(findings)))
+
+
+def p_007(module, rng: random.Random) -> None:
+    """A plan's paragraph is three sentences; two is the spec's threshold, not the plan's."""
+    for sentences, want in ((1, False), (2, False), (3, True), (5, True)):
+        findings, _ = check_text(module, build_plan(["FR-001"], sentences=sentences), "plan")
+        got = "no-summary" not in kinds(findings)
+        report(got is want, f"P-007 paragraph of {sentences} -> {'pass' if want else 'fail'}",
+               str(kinds(findings)))
+
+
+def p_008(module, rng: random.Random) -> None:
+    """A one-line scope statement naming a range declares every identifier in it."""
+    ids = [f"FR-{i:03d}" for i in range(1, 13)]
+    rows = [("FR-001–FR-006", "The first half of the generated design.", "§Generated"),
+            ("FR-007–FR-012", "The second half of the generated design.", "§Generated")]
+    findings, _ = check_text(
+        module, build_plan(ids, rows=rows, body_line="Covers FR-001–FR-012."), "plan")
+    report(not findings, "P-008 a body range and grouped rows cover all twelve", str(kinds(findings)))
+
+    endpoints = [("FR-001–FR-001", "Only the first.", "§Generated"),
+                 ("FR-012–FR-012", "Only the last.", "§Generated")]
+    findings, _ = check_text(
+        module, build_plan(ids, rows=endpoints, body_line="Covers FR-001–FR-012."), "plan")
+    got = "uncovered" in kinds(findings) and any("FR-002" in f.detail for f in findings)
+    report(got, "P-008 covering only the range's endpoints leaves the middle uncovered",
+           str(kinds(findings)))
+
+
+def p_009(module, rng: random.Random) -> None:
+    """Mode selection is explicit, and the spec rules are unchanged by its arrival."""
+    report(module.artifact_kind("/x/plan.md") == "plan", "P-009 plan.md is detected as a plan")
+    report(module.artifact_kind("/x/spec.md") == "spec", "P-009 spec.md is detected as a spec")
+    report(module.artifact_kind("/x/other.md", "plan") == "plan", "P-009 --kind overrides the name")
+
+    spec = build(["FR-001"], [("FR-001", "One explained thing.", "FR-001")])
+    findings, _ = check_text(module, spec, "spec")
+    report(not findings, "P-009 a spec fixture still passes in spec mode", str(kinds(findings)))
+    findings, _ = check_text(module, spec, "plan")
+    report("no-summary" in kinds(findings),
+           "P-009 the same text under plan rules fails the three-sentence rule", str(kinds(findings)))
+
+
+PROPERTIES = {"P-001": p_001, "P-002": p_002, "P-003": p_003, "P-004": p_004,
+              "P-005": p_005, "P-006": p_006, "P-007": p_007, "P-008": p_008, "P-009": p_009}
 
 
 def main() -> int:
@@ -229,14 +363,15 @@ def main() -> int:
     args = parser.parse_args()
 
     if args.list:
-        print("cases: " + ", ".join(CASES))
+        print("cases: " + ", ".join(list(CASES) + list(PLAN_CASES)))
         print("properties: " + ", ".join(PROPERTIES))
         return 0
     if not (args.all or args.case or args.property):
         parser.print_usage()
         return 2
-    if args.case and args.case not in CASES:
-        print(f"unknown case '{args.case}'; have: {', '.join(CASES)}", file=sys.stderr)
+    if args.case and args.case not in list(CASES) + list(PLAN_CASES):
+        print(f"unknown case '{args.case}'; have: {', '.join(list(CASES) + list(PLAN_CASES))}",
+              file=sys.stderr)
         return 2
     if args.property and args.property not in PROPERTIES:
         print(f"unknown property '{args.property}'; have: {', '.join(PROPERTIES)}", file=sys.stderr)
@@ -249,6 +384,9 @@ def main() -> int:
         for name in CASES:
             if args.case is None or args.case == name:
                 run_case(name)
+        for name in PLAN_CASES:
+            if args.case is None or args.case == name:
+                run_plan_case(name)
     if args.all or args.property:
         for name, fn in PROPERTIES.items():
             if args.property is None or args.property == name:

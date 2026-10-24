@@ -7,6 +7,78 @@
   design-phase reasoning the core template does not ask for.
 -->
 
+## In Plain Terms
+
+**This section is required, and it is informative.** It exists so a reader who did not write the plan
+can tell what will be built before meeting the design vocabulary — the components, the mechanisms,
+the trade-offs, and the identifiers carried over from the spec. It is not a second design: where it
+and the plan's technical sections disagree, the plan wins, and the disagreement is a defect in the
+explanation.
+
+**Place it before `## Technical Context`** — where that heading is absent, before every top-level
+section other than `## Summary`. A reader who needs the explanation should not have to pass the
+design to find it. This follows the established shape of a design document: a guide-level explanation
+before the reference-level detail (the Rust RFC template does exactly this, and Google's design docs
+open with a succinct context section that links detail instead of copying it).
+
+Three parts, in this order:
+
+1. **A paragraph of at least three sentences**, before any table, saying what will be built, out of
+   what already exists, and why this shape rather than the obvious alternative.
+2. **The table.** One row per explanation, with exactly these columns:
+
+   | Item | In plain words | Technical |
+   | --- | --- | --- |
+   | FR-001–FR-003 | What was chosen for these requirements, and what it buys. | `scripts/check-plain-terms.py`; §Architecture Overview |
+
+   `Item` holds identifiers — `FR-007`, `SC-002` — comma-separated or as a closed range
+   (`FR-001–FR-006`). Rows may group, but **every** `FR` and `SC` identifier the plan mentions must
+   appear in exactly one row. `Technical` must name **where the design lives**: a section reference
+   (`§Architecture Overview`) or a backticked artefact (`bin/speckit-verify`). Identifiers alone do
+   not satisfy it.
+3. **The terms table.** The plan's own mechanism words, each with the plain words that explain it.
+
+   | Term | Plain words |
+   | --- | --- |
+   | ledger | a file that records what was done, one line per item, so a later reader can check it |
+
+**Rules that the check enforces, and why each exists:**
+
+- **A row states the design choice and its reason — never a restatement of the requirement.** The
+  spec already explains what is owed, and its row is the place for that. The evidence says the format
+  of a design document does not measurably change understanding, while the presence of design
+  decisions and their rationale does (Ernst & Robillard 2023, N=65; Shahin et al. 2014 as reported by
+  Rukmono et al. 2025 — `docs/research/plans-plain-language-2026-10.md` §3). A row that repeats
+  `FR-004` has copied the one thing the evidence says is not the difficulty. This rule is **review**,
+  not a check: the script cannot tell a decision from a paraphrase.
+- **`Technical` must name a section or a file.** An identifier-only cell sends the reader back to the
+  spec and says nothing about how the thing is built. This is the one rule that differs from a spec's
+  table, and it is checked.
+- **No `SHALL`, `MUST` or `SHOULD` in an `In plain words` cell.** The plain layer explains; it must
+  not command. Two normative voices eventually disagree, and the reader cannot tell which binds.
+- **At most 45 words per cell.** A brevity **proxy**, not a readability score. A long cell is a sign
+  the row covers something that deserves its own row.
+- **A bracketed gloss at first prose use.** Every term in the terms table must be followed by `(...)`
+  the first time it appears in a sentence at or after this section, and the bracket holds **at most 25
+  words**. Table lines do not count, so listing a term is not introducing it; the metadata above this
+  section is status, not reading. Google warns that readers skip parenthetical text, so a bracket is
+  for a term, never for a clause.
+- **Properties are not covered.** A `P-00x` property already carries its `for any …` statement and
+  check method in `## Correctness Properties`, so covering it here would duplicate the explanation the
+  plan already gives. This is a decision, not an omission.
+- **Nothing is exempt for being obvious.** A short plan needs a short row, not no row.
+
+**What the check cannot do, stated so nobody trusts it further than it goes:** it verifies that the
+section exists and is early, that the paragraph is long enough, that every identifier is covered once,
+that each row names a section or a file, that no cell commands, and that the listed terms are glossed.
+It cannot tell whether a row states the real reason, and it cannot tell whether a reader understood it.
+The design of this layer is ours; no standard mandates a two-column table, and the research record
+says so rather than borrowing authority for it.
+
+**The same habit applies to what the agent says.** A reply about a design leads with the outcome in
+ordinary words, glosses a design term the first time it uses it, and puts a plain column beside any
+table that summarises the design.
+
 ## Carried Forward
 
 ### Confirmed Decisions

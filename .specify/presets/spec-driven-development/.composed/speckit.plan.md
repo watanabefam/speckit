@@ -149,6 +149,28 @@ A plan introduces design terms, and every new one is a small cost to the reader.
 The plan is read by whoever implements it, and increasingly by whoever reviews it without having
 written it. Precision without a way in is the failure this guards against.
 
+### Fill `## In Plain Terms` as you design
+
+The resolved plan template requires this section. Write it **while designing**, not afterwards:
+
+- **Place it before `## Technical Context`**, after the metadata block and `## Summary`. The reader
+  who needs the explanation should not have to pass the design to find it.
+- **Give every requirement the plan mentions one row**, grouping identifiers into ranges where one
+  design decision serves them all. The sentence says **what you chose and what it buys** — not what
+  the requirement demands, which the spec's own section already explains.
+- **Make `Technical` name the design.** A `§Section` or a backticked path, not an identifier on its
+  own. An id alone sends the reader back to the spec and out of the plan, and the check rejects it.
+- **Put the plan's mechanism words in the terms table**, with a short bracketed gloss where each
+  first appears. "Falsify", "ledger", "vacuity", "coverage report" are the words a newcomer cannot
+  look up; the components and commands are the plan's jargon.
+- **Do not cover `P-00x` properties.** Each already carries its `for any …` statement and check
+  method in `## Correctness Properties`.
+
+Why the row is a decision rather than a summary: the format of a design document showed no measurable
+effect on understanding, while the presence of design decisions and their rationale did
+(`docs/research/plans-plain-language-2026-10.md` §3). A table of paraphrased requirements is work that
+buys nothing.
+
 
 
 ## User Input

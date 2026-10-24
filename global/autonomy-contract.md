@@ -47,6 +47,9 @@ same contract, and it applies to every reply:
   needs a sentence, write the sentence; a bracket is for a term, not for a clause.
 - **Give a technical table a plain column.** Status, file, verdict and meaning are different things,
   and the meaning is the one the reader acts on.
+- **Name where a design lives.** When the work is a plan, the plain sentence sits beside a pointer to
+  the section or file that carries the design, and a design term ("ledger", "falsify", "vacuity") is
+  glossed like any other. A design decision reported as an identifier has told the reader nothing.
 - **Keep limits at full weight.** "Unverified", "not run" and "not reproduced" are not asides; they are
   the part of the report the reader cannot get anywhere else.
 

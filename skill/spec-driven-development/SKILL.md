@@ -97,12 +97,14 @@ These apply at every step; the project's working-agreements states them in full.
 - **Proportion the process.** Use the smallest workflow that gives sufficient confidence. Full
   discovery on a small, well-understood fix is a failure, not diligence.
 - **Explain beside the requirement, never instead of it.** A reader who was not in the room has to be
-  able to follow the work. Specs carry `## In Plain Terms` — a paragraph, a row per identifier, and the
-  document's own terms — and a reply leads with what happened, glosses a specialist term at first use
-  in short brackets, and gives any table that summarises technical work a plain column. The
-  explanation is informative: it never softens a requirement, and where it and the normative text
-  disagree, the normative text wins. The artifact half is checked
-  (`scripts/check-plain-terms.py`); the reply half is review.
+  able to follow the work. Specs and plans carry `## In Plain Terms` — a paragraph, a row per
+  identifier, and the document's own terms, plus a pointer to where the design lives when the artifact
+  is a plan. A reply leads with what happened, glosses a specialist term at first use in short
+  brackets, and gives any table that summarises technical work a plain column. The explanation is
+  informative: it never softens a requirement, and where it and the normative text disagree, the
+  normative text wins. For a plan the row states the design choice and its reason, because the
+  evidence says decisions help a reader and presentation format does not. The artifact half is checked
+  (`scripts/check-plain-terms.py`, which handles both artifacts); the reply half is review.
 
 ## Why these rules exist
 

@@ -3,7 +3,7 @@ schema_version: "1.0"
 preset:
   id: "spec-driven-development"
   name: "Spec-Driven Development Addenda"
-  version: "1.17.0"
+  version: "1.18.0"
   description: "Appends problem framing, plain-language explanation, traceability, approval boundaries and verification sections to the core spec, plan and task templates without replacing them."
   author: "watanabefam"
   repository: "https://github.com/watanabefam/speckit-kit"
@@ -45,7 +45,7 @@ provides:
     - type: "command"
       name: "speckit.plan"
       file: "commands/speckit.plan.prepend.md"
-      description: "Prepends a section-integrity instruction so appended template sections are not dropped from plan.md; also carries the repository sweep, repository-as-evidence, the primary-source research rule with a stopping criterion declared before round 1 and a bounded-convergence report, and the approval gate"
+      description: "Prepends a section-integrity instruction so appended template sections are not dropped from plan.md; the rule for filling ## In Plain Terms as the design is written (a row per requirement stating the choice and its reason, a Technical cell naming a section or file, a bracketed gloss per mechanism word); also carries the repository sweep, repository-as-evidence, the primary-source research rule with a stopping criterion declared before round 1 and a bounded-convergence report, and the approval gate"
       strategy: "prepend"
 
     - type: "command"

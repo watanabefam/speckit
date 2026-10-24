@@ -6,6 +6,44 @@
 
 **Note**: This template is filled in by the `/speckit.plan` command; its definition describes the execution workflow.
 
+## In Plain Terms
+
+This plan puts every check behind one engine, `bin/speckit-verify`, that runs a project's declared checks
+and records what each one examined, because a report that cannot say what it looked at is not evidence.
+It refuses a check whose expected value comes from the code under test — the outside oracle (the
+independent source a check compares against) — and a check whose negative control (an input it is
+supposed to reject) passes. Every run then appends one record to the ledger (an append-only file of
+results that survives a merge), and the optional modes hang off the same manifest so the verdict
+arithmetic stays in one place instead of four.
+
+| Item | In plain words | Technical |
+| --- | --- | --- |
+| FR-001–FR-006 | A run counts what it examined; nothing examined is a failure; a skip is not a pass; and a check with no outside expected value, or one whose control passes, is refused rather than counted. | `bin/speckit-verify`; §Architecture Overview |
+| FR-007–FR-009 | The criteria tally is read from the specs, so "done" is a fraction with named gaps rather than an adjective, and an unknown criterion is an error. | `--criteria`; §Major Components |
+| FR-010–FR-014 | Each run becomes one immutable record with its command, exit code and fingerprint; duplicates fail and reading sorts by time. | `bin/speckit-ledger`; `.specify/ledger.jsonl` |
+| FR-015–FR-018 | A change-scoped run names the subset it ran and never claims the whole suite, and a flaky test is labelled with both outcomes. | `--all`; `evals/` |
+| FR-019–FR-023 | Mutation testing is opt-in and bounded, lists candidates for review instead of a score, and reports a module it could not measure as unmeasured. | `--mutation`; §Architecture Overview |
+| FR-024–FR-028 | The security ladder observes and records a baseline first, blocks only what a provider confirms, refuses an unpinned rule set, and never reports an offline run as clean. | `bin/speckit-security`; §Design Decisions |
+| FR-029–FR-030 | A generated property names the rule it encodes and ships a demonstration that it can fail. | `.specify/verify.json` `spec_rule`/`falsify`; §Correctness Properties |
+| FR-031–FR-032 | Success is reported for one attempt and for repeated attempts, with the pessimistic bound shown beside it. | `pass^k` in `evals/`; §Validation Strategy |
+| FR-033–FR-034 | The changed-line figure says which coverage profile produced it and never turns a silent report into "no test exists". | `--coverage`; §Data Flow |
+| FR-035–FR-036 | A confirmed credential is kept distinct from a pattern match, and a confirmation that cannot run offline says so. | `bin/speckit-security`; §Interfaces and Contracts |
+| FR-037 | A schema-driven finding names the operation that produced it. | `bin/speckit-verify`; §Interfaces and Contracts |
+| FR-038–FR-039 | A killed mutant records whether an assertion or a crash killed it, and the faster mode is labelled as the less precise one. | `--mutation`; §Risks and Mitigations |
+| FR-040–FR-042 | A scheduled broad scan exists, the change-scoped scan uses the same pinned rules, and the control for hand-written credentials is named. | `bin/speckit-security`; §Validation Strategy |
+| FR-043 | A changed line the report never mentions is counted as unmeasured, so silence cannot be read as coverage. | `--coverage`; `decisions/0006-coverage-silence-is-not-a-result.md` |
+| SC-001 | The four vacuity fixtures produce no green verdict, and the clean control still passes. | `evals/fixtures/verify/`; §Validation Strategy |
+| SC-003 | A hundred simulated merge rounds lose, duplicate and reorder nothing. | `bin/speckit-ledger verify`; §Correctness Properties |
+| SC-004 | A one-file change costs a quarter of the full suite or less, at six checks and above, with both numbers recorded. | `docs/evidence/sc-004-timing-2026-10-22.md`; §Risks and Mitigations |
+
+**Terms**
+
+| Term | Plain words |
+| --- | --- |
+| oracle | the independent source a check compares its result against |
+| negative control | an input the check is supposed to reject |
+| ledger | an append-only file of results that survives a merge |
+
 ## Summary
 
 Make `scripts/verify` prove that it looked. One verification engine — `bin/speckit-verify` — runs a project's

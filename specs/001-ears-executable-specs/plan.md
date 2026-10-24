@@ -4,6 +4,39 @@
 
 **Input**: Feature specification from `/specs/001-ears-executable-specs/spec.md`
 
+## In Plain Terms
+
+This plan puts the requirement shapes into the templates (the files the commands copy into a project),
+so the guidance arrives even when the assistant's skill does not load. Alongside them it adds one place
+for a property (a rule that must hold for every possible input, checked by generating inputs) and one
+for an opt-out (a recorded decision to skip that rule, with the reason). The shape is three append
+files plus gate assertions — no new file type, no new dependency, and nothing to install beyond what
+the preset already installs.
+
+| Item | In plain words | Technical |
+| --- | --- | --- |
+| US1 | The five requirement shapes live where every author already reads, so a requirement can be tested without asking what was meant. | `preset/templates/spec-addendum.md`; §Requirements Syntax |
+| US2 | The plan gets a column for the rule that has to hold for every input, so a vague requirement has nowhere to hide. | `preset/templates/plan-addendum.md`; §Correctness Properties |
+| FR-001–FR-005 | All five patterns ship with an example each, and the author picks the one that matches what the requirement describes. | `spec-addendum.md` EARS table |
+| FR-006–FR-007 | A rule named in the plan gets its own task, so the test is planned rather than hoped for. | `preset/templates/tasks-addendum.md`; §Property-Based Test Tasks |
+| FR-008 | The test framework is found in the project, not assumed by the kit, because a dependency the project never chose is a cost it did not agree to. | `plan-addendum.md` framework decision; §Framework decision |
+| FR-009 | A requirement with no natural rule says so, with a reason, instead of getting a property written to fill the shape. | §Correctness Properties opt-out row |
+| FR-010 | The guidance is template text, so it works with the skill unloaded — the failure the kit already measured at roughly 60% skill loading. | `strategy: append` in `preset/preset.yml` |
+| FR-011 | Each link in requirement to rule to test stays visible, so a missing test is a broken chain rather than an absence nobody notices. | §Requirement-to-Design Traceability |
+| FR-012 | When the project has no framework, the plan records the fallback rather than leaving the choice implicit. | §Framework decision |
+| SC-001 | A reviewer can read a requirement and write its check without asking the author a question. | §Validation Strategy |
+| SC-002 | Every testable requirement has a rule, and every exception is written down where a reviewer will see it. | §Correctness Properties |
+| SC-003 | Every rule has a task naming the framework the plan detected. | `tasks-addendum.md`; §Property-Based Test Tasks |
+| SC-004 | A scratch install carries all of it with the skill unloaded. | §Validation Strategy; `scripts/self-gate.sh` |
+| SC-005 | The gate passes on both supported shells, and a second install changes nothing. | `scripts/self-gate.sh`; §Validation Strategy |
+
+**Terms**
+
+| Term | Plain words |
+| --- | --- |
+| property | a rule that must hold for every possible input, checked by generating inputs |
+| opt-out | a recorded decision not to write a property, with the reason |
+
 ## Summary
 
 Add EARS-notation authoring guidance and property-based correctness properties to this kit so specifications become executable: EARS guidance goes into `preset/templates/spec-addendum.md` (all five patterns with syntax + examples), a `Correctness Properties` section (`for any …` mapping with explicit opt-out) goes into `preset/templates/plan-addendum.md`, and property-based test-task rules (one task per property, naming the per-project detected framework, never hardcoded) go into `preset/templates/tasks-addendum.md`. Delivery is `strategy: "append"` in place — no new preset entries, no core-template forks — extended with content assertions in `scripts/self-gate.sh`, and verified by the SC-004 skill-unloaded scratch-repo trial plus the SC-005 Linux/macOS gate.
