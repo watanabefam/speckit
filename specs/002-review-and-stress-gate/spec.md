@@ -4,14 +4,14 @@
 
 **Created**: 2026-10-16
 
-**Status**: Draft
+**Status**: Accepted (owner signed 2026-10-24; work closed 2026-10-16)
 
 **Input**: User description: "The kit has no independent review step. A small change passed the mechanical gate and the author's own reading; only an independent reviewer caught semantic defects. Add an independent review step to /speckit.converge, and a stress test that scales by what the change asserts — not iterating until zero findings."
 
 ## Document Status
 
-**Status changed:** 2026-10-16 (created Draft)
-**Approved by:** watanabefam (repo owner, at request) · **Authority:** maintainer of this kit
+**Status changed:** 2026-10-16 (created Draft) · 2026-10-24 (Draft → Accepted, after `progress.md` recorded completion on 2026-10-16)
+**Approved by:** watanabefam (repo owner, signed 2026-10-24) · **Authority:** maintainer of this kit
 **Workflow:** full spec-driven · **Companion:** `research.md` (informative)
 
 > This spec is authoritative for behaviour. `research.md` is informative: it carries the sources and
