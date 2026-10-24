@@ -50,3 +50,16 @@ recording it once is that every task verifies the same way. If the block records
 Do not create tasks for unapproved future work, convenience features, or broad refactors that
 correctness does not require. If it is not traceable to an approved requirement or design
 decision, it does not get a task.
+
+### Say the outcome, then the mechanics
+
+A task description begins with what will be true when it is done, in ordinary words, and only then
+names files, functions and flags. The person executing the list — human or agent — should be able to
+read the first clause and know whether the task is the one they need, without decoding an identifier.
+
+- `T011 Add a plain-language row for US3, so a reader can tell what the story delivers — before the
+  checker exists` reads.
+- `T011 Implement FR-009` does not.
+
+This is not decoration: an ambiguous task is executed twice or not at all, and both cost more than the
+sentence would have.

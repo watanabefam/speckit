@@ -13,6 +13,46 @@
 **Workflow:** full spec-driven · **Companion:** `research.md` (informative; points at the two research passes)
 **Normative sections:** User Scenarios & Testing, Requirements, Success Criteria.
 
+## In Plain Terms
+
+This feature repairs the gate's own credibility. A section that **skipped** (did not run, and said
+nothing) must be named, and it must not read as a pass. The **guards** (the small programs that refuse a
+command before it runs) are executed with a deliberately bad input as well as a good one, so a guard
+that has quietly stopped working becomes visible instead of trusted. A second install must be
+**idempotent** (running it again changes nothing), and the drift checker must report **drift** (a managed
+file that no longer matches what the kit installed) rather than announcing that everything is current.
+
+| Item | In plain words | Technical |
+| --- | --- | --- |
+| US1 | A check that did not run is named, and never looks like a clean pass. | US1 |
+| US2 | The guards cannot vanish without anyone noticing, and each is exercised both ways. | US2 |
+| US3 | Drift and resume are worked out from what is on disk, not from what the tool wishes were true. | US3 |
+| US4 | Re-installing tells the truth about what it changed, and changes nothing the second time. | US4 |
+| FR-001 | A skipped section is named in the verdict, and a plain pass is not printed while one exists. | FR-001 |
+| FR-002 | The guards do not depend on `jq`, and read JSON another way where they must. | FR-002 |
+| FR-003–FR-004 | A permission block is added when the config has none, and an existing one is left alone. | FR-003, FR-004 |
+| FR-005 | The gate runs each guard with a blocking input and an allowing one. | FR-005 |
+| FR-006 | Drift is reported when the contract, the permission block or a command contribution differs. | FR-006 |
+| FR-007 | Resuming says so when the ledger belongs to a different plan. | FR-007 |
+| FR-008 | Installing into a project that already has the tooling describes only the work it actually does. | FR-008 |
+| FR-009 | A second install leaves the contributions and the permission block unchanged. | FR-009 |
+| FR-010 | The commands table describes what the verification command really does. | FR-010 |
+| SC-001 | Under the strict flag, any skipped section makes the gate exit nonzero, and no skip path exits zero. | SC-001 |
+| SC-002 | All seven guard probes return the expected exit code. | SC-002 |
+| SC-003 | A brownfield install keeps every existing config key and adds the boundary. | SC-003 |
+| SC-004 | The drift checker exits nonzero for each of four removed artifacts. | SC-004 |
+| SC-005 | A second install is idempotent for the contributions and the permission block. | SC-005 |
+| SC-006 | Resuming against a ledger for another plan exits nonzero. | SC-006 |
+
+**Terms**
+
+| Term | Plain words |
+| --- | --- |
+| skipped | a check that did not run, which must never be reported as a pass |
+| guard | a small program that refuses a command before it runs |
+| idempotent | running it again produces no further change |
+| drift | a managed file that no longer matches what the kit installed |
+
 ## Normative Status
 
 **Normative:** User Scenarios & Testing, Requirements, Success Criteria. Everything else in this

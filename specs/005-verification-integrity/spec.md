@@ -15,6 +15,63 @@
 **Revised**: 2026-10-22 after `docs/research/spec-vs-research-check-2026-10-22.md` (findings C-01, H-01…H-03, M-01…M-08, L-01…L-05). **Amended 2026-10-23** (owner-approved): FR-034 qualified and FR-043 added — a coverage report's silence is unmeasured, not uncovered (`decisions/0006-coverage-silence-is-not-a-result.md`).
 **Relationship to 004:** `004-reliability-hardening` repaired the *kit's own* gate (its recursion, its skips, its ledger trust). This feature addresses a different subject: whether a verification report means anything — first at the kit's own `./scripts/verify`, then at any **downstream project's**. Where the two overlap, 004's three-state verdict (`scripts/self-gate.sh:1477-1490`) is the precedent to copy, not to change.
 
+## In Plain Terms
+
+This feature is about a report that says "pass" without having examined anything — **vacuity** (a result
+that is green because nothing ran, nothing was compared, or the check compared the code to itself) — and
+it makes a green result cost something. Every run reports what it examined, completion counts the criteria
+it can evidence, and each result is written once to a **ledger** (an append-only file of results that is
+never rewritten, so the history survives a merge). Two optional checks follow the same rule: mutation
+analysis changes the code on purpose and lists the **mutants** (deliberate small changes a test should
+notice) that survived, as prompts to review rather than a score; and a security scan blocks only what a
+provider confirms. Throughout, the question is the **oracle** (the outside source a check compares
+against) — a check whose expected value comes from the code under test has checked nothing.
+
+| Item | In plain words | Technical |
+| --- | --- | --- |
+| US1 | A green result cannot come from a run that examined nothing, and saying so is the whole point. | US1 |
+| US2 | "Is this feature done?" gets a count of criteria evidenced, not an adjective. | US2 |
+| US3 | Two people appending results keep every record once, in a defensible order. | US3 |
+| US4 | A one-file change is checked against the tests it can affect, quickly, and the report says so. | US4 |
+| US5 | Mutation output is a short list of places to look, never a percentage to chase. | US5 |
+| US6 | Security scanning starts as an observer and blocks only what is confirmed. | US6 |
+| US7 | Generated tests encode the rules the specification states, and each says which one. | US7 |
+| US8 | "Passes every time" is shown to be different from "passed once", with both numbers. | US8 |
+| FR-001–FR-006 | Every run counts what it examined; nothing examined is a nonzero exit; a skip is not a pass; each check declares an expected value from outside the code and a known-bad input it must reject; "no tests collected" is a failure, not a success. | FR-001–FR-006 |
+| FR-007–FR-009 | Completion shows evidenced over total criteria and names the gaps, refuses when there are none, and treats an unknown criterion identifier as an error. | FR-007–FR-009 |
+| FR-010–FR-014 | Each result is one immutable record with its command, exit code and fingerprint; duplicates fail; reading sorts by time; prose is not evidence. | FR-010–FR-014 |
+| FR-015–FR-018 | Default verification names the subset it ran, a full mode exists for a schedule, a subset never claims the whole suite, and a flaky test is labelled with both outcomes. | FR-015–FR-018 |
+| FR-019–FR-023 | Mutation analysis is opt-in and change-scoped, lists bounded candidates, never gates on a percentage, labels unknown mutants honestly, and reports an untested module as unmeasured. | FR-019–FR-023 |
+| FR-024–FR-028 | Scanning observes and records a baseline first, blocks only confirmed findings in baselined rule classes, refuses an unpinned rule set, and never reports an internal error or an offline tier as clean. | FR-024–FR-028 |
+| FR-029–FR-030 | A generated property names the rule it encodes, and comes with a demonstration that it can fail. | FR-029–FR-030 |
+| FR-031–FR-032 | Success is reported for one attempt and for repeated attempts, with the pessimistic bound beside it. | FR-031–FR-032 |
+| FR-033–FR-034 | The changed-line figure says which coverage profile it came from, and never turns a silence into "no test exists". | FR-033–FR-034 |
+| FR-035–FR-036 | A confirmed credential is distinguished from a pattern match, and confirmation reports not-run when offline. | FR-035–FR-036 |
+| FR-037 | A schema-driven check names the operation that produced each finding. | FR-037 |
+| FR-038–FR-039 | A killed mutant records whether a test's assertion killed it or the run crashed, and the faster mode is labelled as less precise. | FR-038–FR-039 |
+| FR-040–FR-042 | A scheduled broad scan exists, the change-scoped scan uses the same pinned rules, and the real control for hand-written credentials is named. | FR-040–FR-042 |
+| FR-043 | A changed line the report never mentions is unmeasured — counted as neither reached nor unexercised. | FR-043 |
+| SC-001 | None of four vacuity fixtures produces a green verdict, and the clean control still passes. | SC-001 |
+| SC-002 | Every completion report carries a count with a nonzero total, or refuses. | SC-002 |
+| SC-003 | A hundred simulated parallel merges lose, duplicate and reorder nothing. | SC-003 |
+| SC-004 | A one-file change verifies in at most a quarter of the full time, at the sizes where that ratio can hold. | SC-004 |
+| SC-005 | Blocking security starts only after a scheduled scan records a per-rule baseline, and never on an unconfirmed match. | SC-005 |
+| SC-006 | Both reliability figures are shown every run, and a deterministic task set makes them equal. | SC-006 |
+| SC-007 | Every claim in the evidence trail is a citation or a reproducible measurement. | SC-007 |
+| SC-008 | Every changed-line report names its profile, and silence or an exclusion is never counted as covered. | SC-008 |
+| SC-009 | No pattern-only match is labelled confirmed, and no green scan satisfies the hand-written credential rule. | SC-009 |
+| SC-010 | Every killed mutant carries a kill status, and a crash is not counted as a test noticing the change. | SC-010 |
+| SC-011 | A reader can tell whether a mutant count came from the less precise mode. | SC-011 |
+
+**Terms**
+
+| Term | Plain words |
+| --- | --- |
+| vacuity | a green result produced by examining nothing, or by comparing the code to itself |
+| oracle | the outside source a check compares against; it must not be the code under test |
+| mutant | a deliberate small change to the code, made to see whether a test notices |
+| ledger | the append-only file of results, never rewritten or reordered |
+
 ## Normative Status
 
 **Normative:** User Scenarios & Testing, Requirements, Success Criteria. Everything else in this

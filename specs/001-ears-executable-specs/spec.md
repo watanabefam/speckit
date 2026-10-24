@@ -17,6 +17,42 @@
 **Accepted 2026-10-23** by the owner: the templates it adds are in use, asserted by the gate, and the
 feature's section outline now conforms to the current spec template (`decisions/0004`).
 
+## In Plain Terms
+
+This feature makes a specification checkable in form: every requirement is written as a fixed sentence
+pattern — EARS (a small set of requirement shapes keyed by *when*, *while*, *if* and *where*) — so a
+reviewer can turn it into a check without asking the author what was meant. Where a requirement can be
+stated as something that must hold for every possible input — a property (a rule with no exception,
+checked by generating inputs) — the plan names it and the task list demands a test for it. A requirement
+that maps to no such rule may say so — an opt-out (a recorded decision to skip the property, with its
+reason) — because a property written to satisfy a form is a fiction that passes.
+
+| Item | In plain words | Technical |
+| --- | --- | --- |
+| US1 | An author writes each requirement in a fixed shape, so a reader can test it without asking what was meant. | US1 |
+| US2 | The plan says, for each requirement it can, which rule must hold for every possible input. | US2 |
+| US3 | The task list asks for one generated-input test per rule, named after it, using whatever framework the project chose. | US3 |
+| FR-001–FR-005 | The template explains all five shapes with an example each, and a requirement must use the shape that fits what it describes. | FR-001–FR-005 |
+| FR-006–FR-007 | A rule named in the plan comes with a task that tests it. | FR-006, FR-007 |
+| FR-008 | No test framework is baked into the kit; the choice belongs to the project. | FR-008 |
+| FR-009 | A requirement with no natural rule may skip it, if the plan says why. | FR-009 |
+| FR-010 | The guidance ships inside the templates, so it works even when the assistant's skill never loads. | FR-010 |
+| FR-011 | The chain from requirement to rule to test stays intact, so nothing is silently unbuilt. | FR-011 |
+| FR-012 | When the project has no such test framework, the plan records that decision instead of leaving it unsaid. | FR-012 |
+| SC-001 | A reviewer can turn every requirement into a check without asking the author. | SC-001 |
+| SC-002 | Every testable requirement has a rule, and every exception is written down. | SC-002 |
+| SC-003 | Every rule has a test task that names the project's framework. | SC-003 |
+| SC-004 | A scratch project gets all of it with the skill unloaded. | SC-004 |
+| SC-005 | The gate passes on Linux and macOS, and a second run changes nothing. | SC-005 |
+
+**Terms**
+
+| Term | Plain words |
+| --- | --- |
+| EARS | a fixed sentence pattern for requirements, in five shapes |
+| property | a rule that must hold for every input, checked by generating inputs |
+| opt-out | a recorded decision not to write a property, with the reason |
+
 ## Normative Status
 
 **Normative:** User Scenarios & Testing, Requirements, Success Criteria. Everything else in this

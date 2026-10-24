@@ -1498,6 +1498,129 @@ if [ -f "$CB" ]; then
   rm -rf "$CBFD"
 fi
 
+hdr "3e. plain terms — a spec a newcomer can follow"
+# The spec template now REQUIRES `## In Plain Terms`. A required section that nothing verifies becomes a
+# half-truth the first time a requirement is added without a row, so the checker, the corpus and the
+# policy surfaces are asserted here rather than left to review.
+CPT="$ROOT/scripts/check-plain-terms.py"
+CPT_INST="$ROOT/.specify/scripts/check-plain-terms.py"
+if [ -f "$CPT" ]; then
+  ok "scripts/check-plain-terms.py present"
+  if [ -x "$CPT" ]; then ok "the checker is executable"; else bad "the checker exists but is not executable"; fi
+else
+  bad "scripts/check-plain-terms.py is missing — the plain-language rule is prose-only"
+fi
+# /speckit.specify names the `.specify/scripts` copy, so that copy must exist and be the same file.
+if [ -f "$CPT_INST" ] && cmp -s "$CPT" "$CPT_INST"; then
+  ok "the installed copy that /speckit.specify names matches the source"
+elif [ -f "$CPT_INST" ]; then
+  bad "the installed plain-terms check is stale — re-run bin/speckit-init"
+else
+  bad "the installed plain-terms check is missing — /speckit.specify points at a script that will not run"
+fi
+if grep -q '^## In Plain Terms' "$ROOT/preset/templates/spec-addendum.md"; then
+  ok "the spec template requires the section"
+else
+  bad "the spec template no longer requires '## In Plain Terms' — the checker would be checking a rule nobody states"
+fi
+
+if [ -f "$CPT" ]; then
+  # The standing corpus: every specification must explain itself.
+  _cpt_count=0; _cpt_fail=0
+  for _spec in "$ROOT"/specs/*/spec.md; do
+    [ -f "$_spec" ] || continue
+    _cpt_count=$((_cpt_count + 1))
+    if ! python3 "$CPT" "$_spec" >/dev/null 2>&1; then
+      _cpt_fail=$((_cpt_fail + 1))
+      printf '        %s\n' "$(python3 "$CPT" "$_spec" 2>&1 | head -3)"
+    fi
+  done
+  if [ "$_cpt_fail" -eq 0 ] && [ "$_cpt_count" -gt 0 ]; then
+    ok "all $_cpt_count specs cover their own explanation"
+  else
+    bad "plain terms: $_cpt_fail of $_cpt_count specs do not explain themselves"
+  fi
+
+  # Each failure shape is asserted on its own fixture. A checker that accepted everything would look
+  # exactly like a clean corpus, so the four defects have to be rejected here, by name.
+  for _probe in "good:0:rows" "no-section:1:missing" "uncovered:1:has no row" \
+                "duplicate:1:covered 2 times" "commands:1:normative keyword MUST" \
+                "unglossed:1:no bracketed gloss" "long-gloss:1:gloss is 30 words" \
+                "vacuous:1:nothing was examined"; do
+    _name="${_probe%%:*}"; _rest="${_probe#*:}"; _want="${_rest%%:*}"; _needle="${_rest#*:}"
+    # The capture must not abort the gate: a fixture is SUPPOSED to exit nonzero, and under `set -e`
+    # a plain assignment would end the run at the first expected failure.
+    if _out="$(python3 "$CPT" "$ROOT/evals/fixtures/plain-terms/$_name/spec.md" 2>&1)"; then _rc=0; else _rc=$?; fi
+    if [ "$_rc" = "$_want" ] && printf '%s' "$_out" | grep -qF "$_needle"; then
+      ok "fixture '$_name' exits $_want for the stated reason"
+    else
+      bad "fixture '$_name' exited $_rc, expected $_want with '$_needle'"
+    fi
+  done
+
+  # Teeth on a real document: strip the section from a copy of a real spec and require rejection.
+  # Without this, a checker that only ever saw fixtures could pass everything in the corpus.
+  _teeth="$(mktemp -d)"
+  _first="$(ls "$ROOT"/specs/*/spec.md 2>/dev/null | head -1 || true)"
+  if [ -n "$_first" ]; then
+    awk 'BEGIN{drop=0} /^## In Plain Terms[[:space:]]*$/{drop=1; next} /^## /{drop=0} !drop' \
+      "$_first" > "$_teeth/spec.md"
+    if python3 "$CPT" "$_teeth/spec.md" >/dev/null 2>&1; then
+      bad "the checker accepted a real spec with its explanation removed"
+    else
+      ok "the checker rejects a real spec with its explanation removed"
+    fi
+  fi
+  rm -rf "$_teeth"
+
+  # The generated properties: 8 cases and 4 properties, one line each.
+  if _pt="$(python3 "$ROOT/evals/fixtures/plain-terms/harness.py" --all 2>&1)"; then
+    _pn="$(printf '%s\n' "$_pt" | grep -c '^  ok ')"
+    if [ "$_pn" -ge 66 ]; then
+      ok "plain-terms harness: $_pn generated and fixture checks pass"
+    else
+      bad "plain-terms harness passed only $_pn checks (expected 66)"
+    fi
+  else
+    bad "plain-terms harness failed: $(printf '%s\n' "$_pt" | grep 'FAIL' | head -3 | tr '\n' ' ')"
+  fi
+fi
+
+# The rule must be present where the agent reads it. Not enforcement — presence is all a command can
+# promise (constitution V) — but a rule that is absent everywhere is a rule that does not exist.
+while IFS='|' read -r _surface _needle; do
+  [ -n "$_surface" ] || continue
+  if grep -qF "$_needle" "$ROOT/$_surface" 2>/dev/null; then
+    ok "plain-language rule present in $_surface"
+  else
+    bad "plain-language rule missing from $_surface (expected '$_needle')"
+  fi
+done <<'SURFACES'
+commands/speckit.md|Plain language is part of the deliverable
+preset/commands/speckit.specify.prepend.md|In Plain Terms
+preset/commands/speckit.plan.prepend.md|specification's vocabulary
+preset/commands/speckit.tasks.prepend.md|Say the outcome, then the mechanics
+preset/commands/speckit.implement.prepend.md|reply is part of the deliverable
+preset/commands/speckit.converge.prepend.md|Close in a form the owner can act on
+skill/spec-driven-development/SKILL.md|Explain beside the requirement
+global/autonomy-contract.md|Write so the work can be followed
+bin/speckit-init|Write it so the work can be followed
+SURFACES
+
+# A peer project's specification, when the earlier peer sweep left one in the workspace. It is
+# conformant on section structure and has no plain layer, which is exactly the negative control a
+# corpus of retrofitted specs cannot provide.
+PEER_SPEC="$ROOT/.scratch/peers/citekit/specs/001-web-search-source/spec.md"
+if [ -f "$PEER_SPEC" ] && [ -f "$CPT" ]; then
+  if python3 "$CPT" "$PEER_SPEC" >/dev/null 2>&1; then
+    bad "the checker accepted a peer spec that has no plain layer"
+  else
+    ok "the checker rejects a conformant peer spec that has no plain layer"
+  fi
+else
+  skip 'no peer spec in .scratch/peers (the peer sweep is not part of a fresh checkout)'
+fi
+
 hdr "1h. CiteKit MCP registration is optional, and skips cleanly"
 MCPBIN="$ROOT/bin/speckit-mcp"
 if [ ! -f "$MCPBIN" ]; then

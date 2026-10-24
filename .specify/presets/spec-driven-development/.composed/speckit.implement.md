@@ -142,6 +142,22 @@ downstream artifact while leaving the cause upstream — that is how artifacts d
 If the repair changes scope, behaviour, architecture, security, data, or cost, surface it for
 approval rather than proceeding.
 
+### The reply is part of the deliverable
+
+Work that the owner cannot follow is work they cannot review, and a review they cannot do is an
+approval they cannot honestly give. So the reporting half of this step has its own rules:
+
+- **Lead with what happened**, in ordinary words, before the command output and the identifiers.
+- **Gloss a specialist term the first time you use it** — short brackets, and a sentence instead of a
+  bracket when the explanation is longer than a phrase.
+- **Put a plain column beside a technical one.** A table of files, checks or findings gets a column
+  saying what the row means for the reader, not only what it is.
+- **Quote output, then say what it showed.** A raw log with no sentence is not a report; a summary with
+  no output is not evidence.
+
+None of this weakens precision: the commands, exit codes and identifiers stay exactly as they are. It
+is the same rule the specs follow — the explanation sits beside the evidence, never in place of it.
+
 
 
 ## User Input

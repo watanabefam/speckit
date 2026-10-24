@@ -113,6 +113,19 @@ Close with what changed, what remains open, what needs approval, what was verifi
 which downstream artifacts are affected. Do not discard earlier decisions silently: if a later
 step invalidated one, say which and why.
 
+### Close in a form the owner can act on
+
+A close-out is read by someone deciding whether to trust the work, and they did not hold the
+vocabulary while it was built.
+
+- **Lead with the verdict in one sentence**, then the evidence for it.
+- **Explain a specialist term at first use**, in short brackets. A close-out full of unglossed terms is
+  a report the owner can only accept or distrust, not evaluate.
+- **Give every table a plain column** — what the row means, beside what it is. Status, file, verdict
+  and meaning are four different things, and only the last one tells the owner what to do.
+- **Keep the limits visible.** "Unverified", "not run" and "not reproduced" belong in the report in the
+  same weight as a pass, because that is the information the reader cannot get anywhere else.
+
 
 
 ## User Input

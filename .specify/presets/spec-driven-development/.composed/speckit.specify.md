@@ -82,6 +82,27 @@ continue. A question whose answer changes nothing is noise.
 Every inference you make goes in Assumptions. Do not invent a requirement to fill a gap. An
 invented requirement is worse than a recorded assumption, because it looks decided.
 
+### Fill `## In Plain Terms` as you write the requirement
+
+The template requires an explanation layer, and it is **informative**: it sits beside the requirement
+and never replaces it. Write the row at the same time as the requirement, not afterwards — an
+explanation written later restates the requirement instead of translating it.
+
+- **One row per thing a reader has to understand.** Group identifiers when they are one idea, but every
+  `US`, `FR` and `SC` gets exactly one row.
+- **Say what it is for, not what it says.** "Nothing is stored until someone asks for it" explains;
+  "the cache MUST NOT store before request" repeats.
+- **Point at the identifier** in the `Technical` column. A copy of the requirement drifts; an id does
+  not.
+- **No `SHALL`, `MUST` or `SHOULD` in the explanation.** Two normative voices eventually disagree and
+  the reader cannot tell which binds.
+- **Gloss a specialist term in short brackets at first use**, and list it in the terms table. A term
+  that needs a sentence gets a sentence.
+
+Run `python3 .specify/scripts/check-plain-terms.py <spec file>` before presenting the spec. It checks
+presence, coverage, brevity and glosses — not whether an explanation is right, which is why the row is
+still yours to get wrong.
+
 
 
 ## User Input

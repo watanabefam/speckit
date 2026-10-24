@@ -136,6 +136,19 @@ Record findings in `research.md`; carry whatever remains open into the plan's Op
 
 Present the plan and **stop**. Do not begin implementation from this step.
 
+### Keep the specification's vocabulary
+
+A plan introduces design terms, and every new one is a small cost to the reader. Two rules:
+
+- **Use the spec's word for the spec's idea.** Do not invent a synonym for something the spec already
+  names — two names for one thing is how a reader loses the thread between documents.
+- **Gloss a genuinely new term in short brackets at first use**, and say where it comes from. A term
+  that needs a clause to explain is not a term the reader can carry; name the mechanism in a sentence
+  and use the term afterwards.
+
+The plan is read by whoever implements it, and increasingly by whoever reviews it without having
+written it. Precision without a way in is the failure this guards against.
+
 
 
 ## User Input

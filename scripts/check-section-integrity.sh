@@ -193,8 +193,12 @@ while IFS= read -r want; do
     # required; only ORDER is waived for these four.
     # Names here are the NORMALISED form (guidance stripped), e.g. '## Requirements Syntax
     # (EARS)' arrives as '## Requirements Syntax'.
+    # `## In Plain Terms` joins them: the spec template instructs the author to place it BEFORE the
+    # first user story, which is ahead of where append-only composition puts it. The whole point of
+    # the section is that a newcomer meets the explanation first; penalising that as reordering would
+    # make the check demand the opposite of the rule.
     case "$want" in
-      "## Document Status"|"## Normative Status"|"### Which document wins"|"## Requirements Syntax"|"## Problem / Opportunity")
+      "## Document Status"|"## Normative Status"|"### Which document wins"|"## Requirements Syntax"|"## Problem / Opportunity"|"## In Plain Terms")
         : ;;   # ordering waived by instruction; presence already verified above
       *)
         say "  ORDER    $want  (found before an earlier-required section)"

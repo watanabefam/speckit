@@ -20,6 +20,41 @@
 Normative sections: User Scenarios & Testing, Requirements, Success Criteria. All other sections are
 informative.
 
+## In Plain Terms
+
+This feature adds a gate a change cannot talk its way past: before work is called done, a reader who did
+not write it looks for **semantic defects** (a claim that is false, or a rule guarding the wrong thing —
+wrong in meaning, not in syntax) and files each as a **finding** (a located observation with evidence,
+not a verdict). Where a change asserts a rule about behaviour, the rule is also stressed with inputs
+chosen to break it, and what breaks becomes a regression test rather than a note. The limit is the
+**oracle** (the outside source a check compares against): a check that compares the code to itself cannot
+be trusted, and prose with no oracle at all cannot be stressed.
+
+| Item | In plain words | Technical |
+| --- | --- | --- |
+| US1 | Someone who did not write the work reviews it and acts on located evidence, so a false claim is caught before "done". | US1 |
+| US2 | A rule the change asserts is attacked with hostile inputs, and a break becomes a permanent test. | US2 |
+| FR-001–FR-003 | Every close-out has a review; each finding carries evidence; unresolved findings stop the close-out. | FR-001, FR-002, FR-003 |
+| FR-004–FR-005 | The asserted behaviour is fed inputs chosen to break it, and a failing input becomes a fixture. | FR-004, FR-005 |
+| FR-006 | A finding with no evidence is dismissed and not counted as a finding. | FR-006 |
+| FR-007 | Prose with nothing falsifiable is reviewed as prose, not stress-tested as if it had a rule. | FR-007 |
+| FR-008 | The rules ship in the command itself, so they apply even when the skill does not load. | FR-008 |
+| FR-009 | The review rule does not contradict the existing rule that completion needs evidence. | FR-009 |
+| FR-010 | The gate checks that the review rule and its stop condition are present. | FR-010 |
+| SC-001 | A planted semantic defect is found by a fresh review, with its location. | SC-001 |
+| SC-002 | Removing the evidence requirement makes the gate fail. | SC-002 |
+| SC-003 | A freshly installed project carries the rule in its command file. | SC-003 |
+| SC-004 | A run with only low findings and an unresolved item still stops. | SC-004 |
+| SC-005 | The gate passes on Linux and macOS, and a second run changes nothing. | SC-005 |
+
+**Terms**
+
+| Term | Plain words |
+| --- | --- |
+| semantic defect | something wrong in meaning — a false claim or a rule guarding the wrong thing |
+| finding | a located observation with evidence, which the owner acts on |
+| oracle | the outside source a check compares against, which must not be the code under test |
+
 ## Normative Status
 
 **Normative:** User Scenarios & Testing, Requirements, Success Criteria. Everything else in this

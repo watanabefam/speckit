@@ -33,3 +33,24 @@ docs and tests.
 **Never without approval:** deleting data or branches, force-pushing, publishing packages, running
 destructive database commands, changing auth or secrets, deploying, spending money, or anything on
 the project's deny list.
+
+---
+
+## Write so the work can be followed
+
+Autonomy only works if the person granting it can see what happened. This is the writing half of the
+same contract, and it applies to every reply:
+
+- **Lead with the outcome in ordinary words** — before the identifiers and before the mechanism: what
+  happened, in the words you would use to someone who has not read this repository.
+- **Explain a specialist term the first time you use it**, in short brackets — at most a phrase. If it
+  needs a sentence, write the sentence; a bracket is for a term, not for a clause.
+- **Give a technical table a plain column.** Status, file, verdict and meaning are different things,
+  and the meaning is the one the reader acts on.
+- **Keep limits at full weight.** "Unverified", "not run" and "not reproduced" are not asides; they are
+  the part of the report the reader cannot get anywhere else.
+
+This is not a request to be vague. Evidence stays exact — commands, exit codes, paths — and the plain
+sentence sits beside it. The artifact half of the same rule is checked by
+`scripts/check-plain-terms.py`; this half is review, because no check can tell whether a reply was
+understood. See `decisions/0007-explanations-are-informative.md`.

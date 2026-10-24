@@ -18,6 +18,63 @@ M-09…M-12, L-06…L-09). **Also revised**: 2026-10-23, after the audit was re-
 mandated the raw `git worktree add` that both peers now identify as the mistake, and was corrected; see
 `docs/research/incorporation-decisions-2026-10.md`, "Re-verification at source level".
 
+## In Plain Terms
+
+This feature is about unattended work: two workers must not collide, and work must survive being stopped.
+A task is claimed before it is worked, and a claim left behind by a worker that died is reclaimable once
+its **lease** (a fixed time after which a declaration counts as abandoned) has run out. Stopping releases
+the claims and leaves the uncommitted work recoverable, so a later session resumes without a transcript.
+Independent tasks may start together as a **wave** (a group of tasks with no dependency between them),
+each in its own checkout. A change to a settled requirement goes through an **amendment** (a dated
+record of what was added, changed and removed, with the prior version archived), and a delta heading
+(the proposal's `ADDED` / `MODIFIED` / `REMOVED` scaffolding, which must not survive being applied) must
+be gone afterwards.
+
+| Item | In plain words | Technical |
+| --- | --- | --- |
+| US1 | Two workers cannot take the same task or edit the same files without one of them being told. | US1 |
+| US2 | Work can be stopped on purpose and resumed cold, with nothing lost and nothing repeated. | US2 |
+| US3 | A failing test is observed before the code that satisfies it exists, as a mechanic rather than a request. | US3 |
+| US4 | Review files located findings with confidence, instead of pronouncing a verdict. | US4 |
+| US5 | Changing a settled requirement leaves an archive and a record, not a silent edit. | US5 |
+| US6 | Findings appear where the change is proposed, and a clean change stays quiet. | US6 |
+| US7 | Notes and decisions are written into the repository where any tool can read them later. | US7 |
+| FR-001–FR-006 | A task is claimed atomically and visibly; a second worker is refused and told who holds it; touch areas and dependencies are declared; a stale claim shows its age and can be reclaimed with a new record. | FR-001–FR-006 |
+| FR-007 | Completion needs an executed check with a recorded exit code and a nonzero count of items examined. | FR-007 |
+| FR-008–FR-009 | Stopping releases claims with a reason and preserves uncommitted work in a recoverable form. | FR-008, FR-009 |
+| FR-010–FR-013 | Resuming prints the next task with its criteria in a fresh session, works across machines and tools, separates old work from new, and can stop before a session limit. | FR-010–FR-013 |
+| FR-014–FR-017 | Test-first is observable, pre-written implementation is discarded, an unapplied mode says so, and work does not start on a failing baseline unless the owner accepts it. | FR-014–FR-017 |
+| FR-018–FR-022 | Review separates compliance from quality, cites file, line, stage and confidence, ends in a small set of states including could-not-review, and never blocks completion by itself. | FR-018–FR-022 |
+| FR-023–FR-026 | An amendment lists additions, changes and removals; the prior version is archived; in-flight plans are distinguishable; contradictions are detectable. | FR-023–FR-026 |
+| FR-027–FR-029 | Findings attach to changed lines, a clean change produces no annotation, and the cheapest checks run locally first. | FR-027–FR-029 |
+| FR-030–FR-032 | Decisions are recorded in the repository, notes attach to work and resurface later, and a contradicted decision is detectable. | FR-030–FR-032 |
+| FR-033–FR-036 | Each worker gets its own checkout from the host's facility, an empty boundary is rejected when the plan is read, start and end commits are recorded, and independent tasks run as a wave. | FR-033–FR-036 |
+| FR-037 | A handoff snapshot is scrubbed of credential shapes, and nothing is pushed if scrubbing cannot run. | FR-037 |
+| FR-038–FR-039 | A finding records how it was established, and a reviewer's precision is measured before its output is treated as a signal. | FR-038, FR-039 |
+| FR-040 | Deprecated terminology is checkable across the specifications, with a nonzero exit. | FR-040 |
+| FR-041 | Applying a delta leaves no delta heading in the settled specification. | FR-041 |
+| SC-001 | Across ten overlapping trials, no two workers edit the same file under different tasks. | SC-001 |
+| SC-002 | No task starts silently on a failing baseline. | SC-002 |
+| SC-003 | A cold resume names the next task and its criteria in one step. | SC-003 |
+| SC-004 | Uncommitted work at handoff is recoverable every time. | SC-004 |
+| SC-005 | Review states are always distinguishable, and could-not-review never reads as a pass. | SC-005 |
+| SC-006 | No applied amendment overwrites its prior version. | SC-006 |
+| SC-007 | No implementation that existed before its test survives. | SC-007 |
+| SC-008 | Exactly one of two simultaneous declarations succeeds. | SC-008 |
+| SC-009 | Every recorded completion carries an executed command, its exit code and a nonzero examined count. | SC-009 |
+| SC-010 | No credential-shaped string reaches a handoff snapshot, and an unscrubbed one is never pushed. | SC-010 |
+| SC-011 | Every review reports the measured precision of its reviewer, or says it is unmeasured. | SC-011 |
+| SC-012 | No settled specification keeps a delta heading, and an unsynced delta is reported as one. | SC-012 |
+
+**Terms**
+
+| Term | Plain words |
+| --- | --- |
+| lease | the time after which a claim by a stopped worker counts as abandoned and may be taken |
+| wave | a group of tasks with no dependency between them, startable together |
+| amendment | a dated record of what a requirement change added, changed and removed |
+| delta heading | the proposal's ADDED / MODIFIED / REMOVED scaffolding, which must not survive a sync |
+
 ## Normative Status
 
 **Normative:** User Scenarios & Testing, Requirements, Success Criteria. Everything else in this

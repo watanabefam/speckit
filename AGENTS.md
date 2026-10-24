@@ -19,6 +19,13 @@ it when you need the workflow to apply for certain.
 needed · Approval required — defined in `.opencode/autonomy-contract.md`. Reversible, in-scope work
 is autonomous; only the irreversible, external, or costly needs approval.
 
+**Write it so the work can be followed.** Lead with the outcome in ordinary words, explain a specialist
+term in short brackets the first time you use it, and give a table that summarises technical work a
+column saying what each row means. Every spec carries `## In Plain Terms` for the same reason:
+`python3 .specify/scripts/check-plain-terms.py <spec>` checks the section exists, covers every
+identifier and glosses every listed term — it cannot check whether the explanation is right, so that
+part is still yours.
+
 ## Two rules that are enforced, not advised
 
 `.opencode/hook/hooks.yaml` (requires the `opencode-yaml-hooks` plugin) runs below the prompt layer,

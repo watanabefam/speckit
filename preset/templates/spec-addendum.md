@@ -95,6 +95,65 @@ relationship to be stated (a dated reference fixes the version; an undated one f
 eventually contradict you). A companion document that is not labelled informative will be read as
 competing with the spec, and nobody will know which one to follow.
 
+## In Plain Terms
+
+**This section is required, and it is informative.** It exists so a reader who was not in the room can
+tell what the feature does before meeting the numbered requirements. It is not a second specification:
+where it and the normative text disagree, the normative text wins, and the disagreement is a defect in
+the explanation.
+
+**Place it before the first `### User Story` heading** — a reader who needs the explanation should not
+have to pass the requirements to find it.
+
+Three parts, in this order:
+
+1. **A paragraph.** At least two sentences saying what the feature does, in the words you would use to
+   a colleague who has never read this repository. Before any table.
+2. **The table.** One row per explanation, with exactly these columns:
+
+   | Item | In plain words | Technical |
+   | --- | --- | --- |
+   | FR-001–FR-003 | What these requirements make happen, for whom, and why it matters. | FR-001, FR-002, FR-003 |
+
+   `Item` holds identifiers — `US1`, `FR-007`, `SC-002` — and may list several, comma-separated or as a
+   closed range (`FR-001–FR-006`). Rows may group, but **every** `US`, `FR` and `SC` identifier in the
+   document must appear in exactly one row. `Technical` points at the identifiers; it does not restate
+   their text, because a copy drifts and an id does not.
+3. **The terms table.** The specialist words this document uses, each with the plain words that explain
+   it. This is the document's own list: there is no global dictionary, because a term that is jargon in
+   one project is ordinary in another.
+
+   | Term | Plain words |
+   | --- | --- |
+   | normative | the text a build can be judged against — pass or fail |
+
+**Rules that the check enforces**, and why each exists:
+
+- **No `SHALL`, `MUST` or `SHOULD` in an `In plain words` cell.** The plain layer explains; it must not
+  command. Two normative voices eventually disagree, and the reader cannot tell which one binds. (The
+  asymmetry is deliberate: the requirement text uses `MUST`, the explanation may not.)
+- **At most 45 words per cell.** A brevity **proxy**, not a readability score — formulas measure
+  sentence length, not understanding (see `docs/research/plain-language-2026-10.md` §6). A long cell is
+  a sign the row is covering something that deserves its own row.
+- **A bracketed gloss at first prose use.** Every term in the terms table must be followed by `(...)`
+  the first time it appears in a **sentence at or after this section** — the paragraph above is the
+  natural place — and the bracket holds **at most 25 words**. Table lines do not count, so listing a
+  term is not the same as introducing it; nor does the metadata above this section, which is status
+  rather than reading and may quote the requester verbatim. This is the convention GOV.UK and Google both document; neither supports burying a
+  clause in a bracket. If the term needs a sentence, write a sentence and keep the bracket for the term.
+- **Nothing is exempt for being obvious.** A short spec needs a short row, not no row.
+
+**What the check cannot do, stated so nobody trusts it further than it goes:** it verifies that the
+section exists, that every identifier is covered once, that no cell commands, and that the listed terms
+are glossed. It cannot tell whether an explanation is *correct*, and it cannot tell whether a reader
+understood it. A covered-but-wrong row is a review finding, not a gate failure — the same limit
+`decisions/0004` records for a section that is present but empty.
+
+**The same habit applies to what the agent says.** A reply leads with what happened in ordinary words,
+glosses a specialist term the first time it uses it, and puts a plain column beside any table that
+summarises technical work. The entry point, the step contributions and the skill carry that rule; this
+section is where it shows up in the artifact.
+
 ## Requirements Syntax (EARS)
 
 Every functional requirement is written in **EARS** (Easy Approach to Requirements Syntax). EARS

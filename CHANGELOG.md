@@ -93,6 +93,39 @@ ESLint's unused suppressions and RuboCop's `--report-unused-todo-entries` apply.
 non-empty. `003` needed one heading, `001` nineteen. Content is derived from each spec's own text or is
 an explicit non-applicability with a reason; no new claims were added to fill a section.
 
+## [1.17.0] — 2026-10-24
+
+### Added — every specification explains itself, and the explanation is checked
+
+The owner reported that the workflow was slow to use because the artifacts were hard to understand.
+The repair is an **informative** layer beside the requirements, not a rewrite of them:
+
+- **`## In Plain Terms` is now required in `spec.md`** — a short paragraph, a table mapping every `US`,
+  `FR` and `SC` identifier to a plain sentence, and a table of the document's own specialist terms.
+  It sits before the first user story, may not contain `SHALL`/`MUST`/`SHOULD`, and points at
+  identifiers instead of copying requirement text. `decisions/0007` records why this shape was chosen
+  over plainer requirements.
+- **`scripts/check-plain-terms.py`** verifies presence, placement, total-and-unique coverage, the
+  keyword ban, the 45-word cell cap (a brevity proxy, explicitly not a readability score) and a
+  bracketed gloss of at most 25 words at each term's first use. It is installed into adopters by
+  `speckit-init` beside the section checker, because a template that demands a section and no way to
+  verify it hands the adopter an unenforceable rule.
+- **Eight fixtures and four properties** (`evals/fixtures/plain-terms/`) — control, missing section,
+  uncovered, duplicate, commanding cell, unglossed term, over-long gloss, and the empty-table shape —
+  each observed failing for its own reason before the checker was observed passing.
+- **The habit is policy for the reply, not only the artifact**: the entry point, the five step
+  contributions, the skill, the autonomy contract and the `AGENTS.md` bridge now say to lead with the
+  outcome in ordinary words, gloss a term in short brackets at first use, and give a technical table a
+  plain column. That half is review, not enforcement, and says so.
+- **All six accepted specs are retrofitted** — additions only, no requirement text changed; the
+  conformance baseline is regenerated and the section-checker order waiver covers the instruction to
+  place the section early.
+
+Evidence for the design, including where the evidence does **not** support us (readability formulas do
+not measure comprehension; a plain-language summary does not automatically improve it), is in
+`docs/research/plain-language-2026-10.md`. Measured on a peer: citekit's conformant spec is rejected
+with zero rows, which is the negative control that the check is not testing its own corpus.
+
 ## [1.16.0] — 2026-10-22
 
 ### Added — a green result must be earned (spec 005)

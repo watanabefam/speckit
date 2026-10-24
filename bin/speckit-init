@@ -399,6 +399,13 @@ it when you need the workflow to apply for certain.
 needed · Approval required — defined in `.opencode/autonomy-contract.md`. Reversible, in-scope work
 is autonomous; only the irreversible, external, or costly needs approval.
 
+**Write it so the work can be followed.** Lead with the outcome in ordinary words, explain a specialist
+term in short brackets the first time you use it, and give a table that summarises technical work a
+column saying what each row means. Every spec carries `## In Plain Terms` for the same reason:
+`python3 .specify/scripts/check-plain-terms.py <spec>` checks the section exists, covers every
+identifier and glosses every listed term — it cannot check whether the explanation is right, so that
+part is still yours.
+
 ## Two rules that are enforced, not advised
 
 `.opencode/hook/hooks.yaml` (requires the `opencode-yaml-hooks` plugin) runs below the prompt layer,
@@ -636,6 +643,28 @@ if [ -f "$SIC_SRC" ]; then
   else
     cp "$SIC_SRC" "$SIC_DST"; chmod +x "$SIC_DST"
     say "updated .specify/scripts/check-section-integrity.sh to the current version"
+  fi
+fi
+
+# --- 7b. Plain-terms check (referenced by /speckit.specify and the gate) --------
+# The spec template now REQUIRES an `## In Plain Terms` section, and a demanded section that nothing
+# verifies becomes a half-truth the first time a requirement is added without a row. Shipping the
+# template without the checker would hand every adopter a rule they cannot run, so the two travel
+# together — and it is installed here rather than referenced from the kit, for the same reason the
+# section checker is.
+CPT_SRC="$KIT_ROOT/scripts/check-plain-terms.py"
+CPT_DST="$ROOT/.specify/scripts/check-plain-terms.py"
+if [ -f "$CPT_SRC" ]; then
+  mkdir -p "$ROOT/.specify/scripts"
+  if [ ! -f "$CPT_DST" ]; then
+    cp "$CPT_SRC" "$CPT_DST"; chmod +x "$CPT_DST"
+    say "installed .specify/scripts/check-plain-terms.py (used by /speckit.specify)"
+  elif cmp -s "$CPT_SRC" "$CPT_DST"; then
+    chmod +x "$CPT_DST"
+    say "plain-terms check already current"
+  else
+    cp "$CPT_SRC" "$CPT_DST"; chmod +x "$CPT_DST"
+    say "updated .specify/scripts/check-plain-terms.py to the current version"
   fi
 fi
 

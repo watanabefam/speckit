@@ -14,6 +14,50 @@
 **Approved by:** watanabefam (repo owner) · **Authority:** maintainer of this kit
 **Workflow:** full spec-driven · **Companion:** `research.md` (informative)
 
+## In Plain Terms
+
+This feature moves the approval line out of prose and into the tools: a **permission boundary** (a list
+of commands the assistant may not run, refused by the tool rather than by the model's judgement) stops
+force-pushes, publishes and destructive database commands without asking anyone, while routine edits
+and tests proceed. Verification becomes one recorded command that every task names. Approved work then
+runs continuously, stopping only when an **execution budget** (a fixed number of consecutive failures,
+after which the run halts and says so) is spent, and each completed task is written to the **ledger** (the
+append-only file recording what completed and on what evidence). Small, well-understood work takes the **fast lane** (a
+shorter path with no spec, plan or task artifacts), and a fast-lane change that grows is promoted rather
+than finished there.
+
+| Item | In plain words | Technical |
+| --- | --- | --- |
+| US1 | Routine work needs no prompts; the dangerous commands are refused by the tool, not by the model's goodwill. | US1 |
+| US2 | There is one verification command, and every task says to run it. | US2 |
+| US3 | Approved work runs to the end of the list, and stops on a stated condition instead of guessing. | US3 |
+| US4 | A small fix skips the planning artifacts, and a defect still starts with a failing test. | US4 |
+| FR-001–FR-002 | The permission block is created when missing, and an existing config is left as the owner wrote it. | FR-001, FR-002 |
+| FR-003 | When two rules disagree, the refusal wins. | FR-003 |
+| FR-004 | Exactly one autonomy contract is installed, and the commands do not repeat its rules. | FR-004 |
+| FR-005–FR-006 | The project's commands are detected and recorded; when detection fails, the gap is recorded and asked about rather than guessed. | FR-005, FR-006 |
+| FR-007 | A task names the recorded verification command instead of inventing one. | FR-007 |
+| FR-008 | Approved work is not interrupted with a prompt at every phase. | FR-008 |
+| FR-009 | When failures reach the budget, the run halts and leaves the unfinished tasks unticked. | FR-009 |
+| FR-010 | Completing a task commits it and adds a line to the ledger. | FR-010 |
+| FR-011–FR-013 | Small requests take the short path; a defect needs a failing test first; a change that outgrows the lane is promoted. | FR-011, FR-012, FR-013 |
+| FR-014–FR-015 | The gate checks that a scratch install carries the artifacts, and an edited managed block is reported rather than overwritten. | FR-014, FR-015 |
+| SC-001 | A ten-task feature reaches first green in at most two human interactions. | SC-001 |
+| SC-002 | Every irreversible action on the fixed list is refused in an unattended run. | SC-002 |
+| SC-003 | Tasks are not reopened more often than before this feature. | SC-003 |
+| SC-004 | A small fix completes through the short path with no spec, plan or task files. | SC-004 |
+| SC-005 | The gate passes on the macOS and Linux shells this kit supports. | SC-005 |
+| SC-006 | An interrupted run resumes with no completed task repeated. | SC-006 |
+
+**Terms**
+
+| Term | Plain words |
+| --- | --- |
+| permission boundary | the tool-level list of commands that are refused regardless of what the model decides |
+| execution budget | a fixed number of consecutive failures, after which a run halts and reports |
+| fast lane | a shorter workflow for small, well-understood work, with no planning artifacts |
+| ledger | the append-only file that records which tasks completed and on what evidence |
+
 ## Normative Status
 
 **Normative sections:** User Scenarios & Testing, Requirements, Success Criteria. Everything else in
