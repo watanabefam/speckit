@@ -1752,6 +1752,90 @@ PLANSURFACES
   fi
 fi
 
+hdr "3g. negative control — the check's teeth are demonstrated, not assumed"
+# Feature 005 says a test check with no negative control is vacuous (FR-005), and the manifest now
+# declares one. This section holds that declaration to its meaning rather than to its presence: the
+# control has to name a mutator that exists, and it has to return 1 / 0 / 127 for caught / asleep /
+# could-not-run. The last three are asserted because a control that only ever returns 1 is
+# indistinguishable from `exit 1`, which proves nothing about the suite (decisions/0010).
+NC="$ROOT/scripts/negative-control.sh"
+MANIFEST="$ROOT/.specify/verify.json"
+if [ -x "$NC" ]; then
+  ok "scripts/negative-control.sh present and executable"
+else
+  bad "scripts/negative-control.sh is missing or not executable — the manifest's control cannot run"
+fi
+
+_ctl=""
+if [ -f "$MANIFEST" ]; then
+  _ctl="$(python3 - "$MANIFEST" <<'PY'
+import json, sys
+try:
+    doc = json.load(open(sys.argv[1]))
+except Exception:
+    sys.exit(0)
+for chk in doc.get("checks", []):
+    if chk.get("id") == "test":
+        print(chk.get("control") or "")
+        break
+PY
+)"
+fi
+if [ -n "$_ctl" ]; then
+  ok "the test check declares a negative control (without one, every verify run is INCOMPLETE by construction)"
+else
+  bad "the test check declares no control — ./scripts/verify can never report evidence"
+fi
+_mut="$(printf '%s\n' "$_ctl" | sed -n 's/.*--mutate  *\([^ ]*\).*/\1/p')"
+if [ -n "$_mut" ] && [ -x "$ROOT/$_mut" ]; then
+  ok "the control names a mutator that exists ($_mut)"
+else
+  bad "the control names no executable mutator (parsed '$_mut')"
+fi
+
+# The outcomes, on a throwaway tree. Cheap on purpose: proving the contract must not need an
+# eighty-second suite run, or it will be the first assertion someone deletes.
+if [ -x "$NC" ]; then
+  _fxp="$(mktemp -d)"; _fx="$_fxp/tree"; mkdir -p "$_fx"
+  printf 'keep\n' > "$_fx/fixture.txt"
+  printf '#!/bin/sh\ngrep -qx keep fixture.txt || exit 1\ngrep -vx keep fixture.txt > fixture.tmp\nmv fixture.tmp fixture.txt\n' \
+    > "$_fx/drop.sh"
+  printf '#!/bin/sh\nexit 1\n' > "$_fx/inert.sh"
+  chmod +x "$_fx/drop.sh" "$_fx/inert.sh"
+
+  _rc=0
+  "$NC" --tree "$_fx" --mutate drop.sh --expect 'missing: keep' \
+    --command 'sh -c "grep -qx keep fixture.txt || { echo missing: keep; exit 1; }"' \
+    >/dev/null 2>&1 || _rc=$?
+  [ "$_rc" = "1" ] && ok "a caught mutant exits 1 — the check is evidence" \
+    || bad "a caught mutant exited $_rc, want 1"
+
+  _rc=0
+  "$NC" --tree "$_fx" --mutate drop.sh --expect 'missing: keep' --command 'true' \
+    >/dev/null 2>&1 || _rc=$?
+  [ "$_rc" = "0" ] && ok "a suite that stays green on the mutant exits 0 — the engine reports vacuous" \
+    || bad "an asleep suite exited $_rc, want 0"
+
+  _rc=0
+  "$NC" --tree "$_fx" --mutate drop.sh --expect 'missing: keep' \
+    --command 'sh -c "echo something else broke; exit 1"' >/dev/null 2>&1 || _rc=$?
+  [ "$_rc" = "127" ] && ok "a failure for the wrong reason exits 127 — it is not evidence" \
+    || bad "a wrong-reason failure exited $_rc, want 127"
+
+  _rc=0
+  "$NC" --tree "$_fx" --mutate inert.sh --expect 'missing: keep' --command 'true' \
+    >/dev/null 2>&1 || _rc=$?
+  [ "$_rc" = "127" ] && ok "a mutator that changes nothing exits 127 — no mutant, no proof" \
+    || bad "an inert mutator exited $_rc, want 127"
+
+  if grep -qx keep "$_fx/fixture.txt"; then
+    ok "the control mutated a copy — the tree it was given is unchanged"
+  else
+    bad "the control mutated the tree it was given instead of a copy"
+  fi
+  rm -rf "$_fxp"
+fi
+
 hdr "1h. CiteKit MCP registration is optional, and skips cleanly"
 MCPBIN="$ROOT/bin/speckit-mcp"
 if [ ! -f "$MCPBIN" ]; then

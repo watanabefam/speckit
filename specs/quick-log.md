@@ -105,3 +105,26 @@ Evidence: simulating `./bin/speckit-init <tmp>` from the kit root printed
 -> `SELF-GATE: PASS`.
 
 Parked: bulk repo update awaiting decisions (hooks, dirty trees, commits).
+
+## 2026-10-25 — verify: a negative control that runs the suite
+
+Cause (two lines): `./scripts/verify` had answered `INCOMPLETE — nothing was examined, 1 vacuous
+check(s)` on every run since the manifest was seeded, because `.specify/verify.json` declared no
+`control`. With a control in place it still answered `INCOMPLETE`, because the `make` adapter cannot
+read the `examined=N` count this suite prints.
+
+Change: `scripts/negative-control.sh` (copy the tree, apply a mutator, run the manifest's own command,
+require the expected message; exit 1 caught / 0 asleep / 127 could-not-run); `.specify/controls/plain-row-missing.py`
+(delete one coverage row from a specification's plain table); the `test` check gains the control and moves
+to `runner: command`; `scripts/self-gate.sh` §3g holds the declaration to its meaning in 8 assertions.
+
+Evidence: `scripts/negative-control.sh --mutate .specify/controls/plain-row-missing.py --expect 'has no row'`
+-> exit 1, `caught by "has no row"`, and the source specification byte-identical afterwards.
+`./scripts/verify --all` -> `SELF-VERIFY: PASS — 1 check(s), 0 skipped, 0 failed (examined all declared
+checks)`, exit 0, `examined=218`, 2m46s. `make test` -> `SELF-GATE: PASS examined=218 assertion(s)`, exit 0
+(was 210; §3g adds 8). Rationale and sources in `decisions/0010`.
+
+Parked: the `make` adapter has no `examined=` fallback, so an adopter whose `make test` wraps a suite that
+prints that count gets `examined unknown` — the fix is an amendment to `specs/005`, a feature-sized change.
+A second mutator (neuter the plain-terms checker in both copies) would cover the "the checker stopped
+detecting" class at double the cost. No preset change, so no CHANGELOG entry.

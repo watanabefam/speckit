@@ -1,0 +1,16 @@
+{
+  "version": 1,
+  "checks": [
+    {
+      "id": "test",
+      "kind": "test",
+      "runner": "command",
+      "command": "make test",
+      "paths": [
+        "**"
+      ],
+      "oracle": "declared",
+      "control": "scripts/negative-control.sh --mutate .specify/controls/plain-row-missing.py --expect 'has no row'"
+    }
+  ]
+}
