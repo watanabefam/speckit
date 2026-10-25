@@ -9,7 +9,19 @@ informative `## In Plain Terms` section (see `preset/templates/spec-addendum.md`
 first requirement added without a row turns the table into a half-truth nobody notices. This checks the
 two properties that are text, so the rest can be review.
 
-WHAT IT CHECKS
+OPTIONAL BY DEFAULT
+The owner's ruling of 2026-10-25 narrowed this to a conversation rule: the artifacts are read by an
+agent first, so a plainly written layer on `spec.md` and `plan.md` is a convenience, not an
+obligation (`decisions/0009-the-rule-is-for-the-chat.md`). A document without `## In Plain Terms`
+therefore passes, and says so — an absence is not a defect, and a check that failed every document
+which never opted in would force the layer on projects that do not want it.
+
+What is still enforced is the half that would otherwise rot: a document that *does* carry the section
+must conform. Drift in a table nobody validates is worse than no table, because it reads as a promise.
+`--require-section` demands one; a project that wants the layer everywhere puts that flag in its
+verify manifest, and the kit's own fixtures use it to keep the failure path under test.
+
+WHAT IT CHECKS (a document that carries the section)
 1. The section exists, and it comes before the first `### User Story` heading.
 2. It opens with at least two sentences of prose before any table.
 3. A table whose header carries `Item`, `In plain words` and `Technical` exists.
@@ -58,8 +70,9 @@ A spec with the section but no rows fails as "nothing was examined", and so does
 identifiers at all. An empty table is the shape a ritual takes, and a check that passes on nothing is
 not a check (the rule 005 states for the gate applies here).
 
-Usage: check-plain-terms.py [--json] [--kind auto|spec|plan] <file> [...]
-Exit:  0 = every file conformant · 1 = at least one finding · 2 = usage or read error.
+Usage: check-plain-terms.py [--json] [--require-section] [--kind auto|spec|plan] <file> [...]
+Exit:  0 = every file conformant, or declined (no section, not required) · 1 = at least one finding ·
+       2 = usage or read error.
 """
 from __future__ import annotations
 
@@ -254,7 +267,7 @@ def plan_placement_ok(lines: list[str], start: int) -> bool:
     return True
 
 
-def check_file(path: str, kind: str = "spec") -> tuple[list[Finding], dict]:
+def check_file(path: str, kind: str = "spec", require_section: bool = False) -> tuple[list[Finding], dict]:
     findings: list[Finding] = []
     try:
         with open(path, encoding="utf-8") as fh:
@@ -267,9 +280,14 @@ def check_file(path: str, kind: str = "spec") -> tuple[list[Finding], dict]:
 
     span = find_section(lines)
     if span is None:
-        findings.append(Finding(path, "no-section",
-                                f"missing '## In Plain Terms' (see the {kind} template)"))
-        return findings, table
+        # Optional by default (2026-10-25 ruling): declining the layer is not a finding. `declined`
+        # travels in the table so the caller can say which of the two zero-finding outcomes it got —
+        # "checked and clean" and "nothing to check" are different claims.
+        if require_section:
+            findings.append(Finding(path, "no-section",
+                                    f"missing '## In Plain Terms' (see the {kind} template)"))
+            return findings, table
+        return [], {**table, "declined": kind}
     start, end = span
 
     # Placement: the explanation comes before the detail it explains.
@@ -400,6 +418,7 @@ def check_file(path: str, kind: str = "spec") -> tuple[list[Finding], dict]:
 
 def main(argv: list[str]) -> int:
     as_json = "--json" in argv
+    require_section = "--require-section" in argv
     kind = "auto"
     rest: list[str] = []
     i = 0
@@ -414,7 +433,7 @@ def main(argv: list[str]) -> int:
             continue
         if arg.startswith("--kind="):
             kind = arg.split("=", 1)[1]
-        elif arg != "--json":
+        elif arg not in ("--json", "--require-section"):
             rest.append(arg)
         i += 1
 
@@ -424,19 +443,22 @@ def main(argv: list[str]) -> int:
     paths = rest
     if not paths:
         print(__doc__.strip().splitlines()[-1], file=sys.stderr)
-        print("usage: check-plain-terms.py [--json] [--kind auto|spec|plan] <file> [...]", file=sys.stderr)
+        print("usage: check-plain-terms.py [--json] [--require-section] [--kind auto|spec|plan] <file> [...]",
+              file=sys.stderr)
         return 2
 
     reports, failed = [], False
     for path in paths:
-        findings, table = check_file(path, artifact_kind(path, kind))
+        findings, table = check_file(path, artifact_kind(path, kind), require_section)
         forced = len(findings) > 0
         failed = failed or forced
         reports.append({"table": table, "findings": [str(f) for f in findings], "ok": not forced})
         if not as_json:
             for finding in findings:
                 print(f"  FAIL     {finding}")
-            if not forced:
+            if not forced and table.get("declined"):
+                print(f"  ok       {path}: no plain layer (optional; --require-section to demand one)")
+            elif not forced:
                 print(f"  ok       {path}: {table['rows']} rows, {table['covered']} identifiers covered, "
                       f"{table['terms']} terms glossed")
 

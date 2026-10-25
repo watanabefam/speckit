@@ -54,6 +54,9 @@ same contract, and it applies to every reply:
   the part of the report the reader cannot get anywhere else.
 
 This is not a request to be vague. Evidence stays exact — commands, exit codes, paths — and the plain
-sentence sits beside it. The artifact half of the same rule is checked by
-`scripts/check-plain-terms.py`; this half is review, because no check can tell whether a reply was
-understood. See `decisions/0007-explanations-are-informative.md`.
+sentence sits beside it. This is the half the rule actually binds: the artifacts are read by an agent
+first, so a plainly written layer on a spec or plan is offered and not demanded (owner ruling
+2026-10-25, `decisions/0009-the-rule-is-for-the-chat.md`), while a reply that a person cannot follow is
+a defect every time. `scripts/check-plain-terms.py` keeps an opted-in document honest; the reply half is
+review, because no check can tell whether a reply was understood. See
+`decisions/0007-explanations-are-informative.md`.

@@ -1,5 +1,10 @@
 # 0008 — Plans explain the design beside the requirements, and the explanation is checked
 
+> **Narrowed 2026-10-25 by `0009`.** A plan is offered this layer rather than required to carry it; the
+> rule that binds is design talk in the reply, and the artefact rule below applies to a plan that
+> opts in. The reason a row names a decision and points at where the design lives is unchanged — that
+> half is what an implementing agent reads.
+
 ## Context
 
 Feature 007 gave every specification an informative `## In Plain Terms` section and made plain

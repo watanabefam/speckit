@@ -96,15 +96,15 @@ These apply at every step; the project's working-agreements states them in full.
 - **Completion requires evidence.** Compiling, one passing test, or an edited file is not evidence.
 - **Proportion the process.** Use the smallest workflow that gives sufficient confidence. Full
   discovery on a small, well-understood fix is a failure, not diligence.
-- **Explain beside the requirement, never instead of it.** A reader who was not in the room has to be
-  able to follow the work. Specs and plans carry `## In Plain Terms` — a paragraph, a row per
-  identifier, and the document's own terms, plus a pointer to where the design lives when the artifact
-  is a plan. A reply leads with what happened, glosses a specialist term at first use in short
-  brackets, and gives any table that summarises technical work a plain column. The explanation is
-  informative: it never softens a requirement, and where it and the normative text disagree, the
-  normative text wins. For a plan the row states the design choice and its reason, because the
-  evidence says decisions help a reader and presentation format does not. The artifact half is checked
-  (`scripts/check-plain-terms.py`, which handles both artifacts); the reply half is review.
+- **Say it plainly in the reply.** The artifacts are read by an agent first (owner ruling
+  2026-10-25, `decisions/0009-the-rule-is-for-the-chat.md`), so the plain-language obligation binds the
+  conversation: a reply leads with what happened, glosses a specialist term at first use in short
+  brackets, and gives any table that summarises technical work a plain column — including a table
+  about a design decision, where the sentence says what was chosen and why. A spec or plan MAY carry
+  `## In Plain Terms`; where it exists the checker (`scripts/check-plain-terms.py`) keeps it true, and
+  where it does not, nothing is missing. The explanation never softens a requirement: where it and the
+  normative text disagree, the normative text wins. Nothing can check that a reply was followed —
+  that half is review, stated rather than implied.
 
 ## Why these rules exist
 

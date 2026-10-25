@@ -5,6 +5,30 @@ versioning follows [Semantic Versioning](https://semver.org/).
 
 The preset version lives in `preset/preset.yml` and is what `specify preset info` reports.
 
+## [1.19.0] — 2026-10-25
+
+### Changed — the plain-language rule binds the reply, not the document
+
+The owner's ruling of 2026-10-25 narrowed features `007` and `008`: *"I don't need plain language in the
+plan documents, just in the chat, because the documents are AI facing first."* `decisions/0009` records
+it. What changed:
+
+- **The templates offer `## In Plain Terms` instead of requiring it.** The shape, the rules and the
+  worked examples are unchanged; the obligation is not. A spec or plan without one is not incomplete.
+- **The checker enforces conformance, not presence.** `scripts/check-plain-terms.py` passes a document
+  that declines the layer and prints `no plain layer (optional; --require-section to demand one)`.
+  `--require-section` restores the old behaviour for a project that wants the layer everywhere; it is
+  the caller's manifest, not the kit's default.
+- **Both directions are asserted.** New property `P-010` (harness: 91 → 95 checks) proves an absent
+  layer passes and the same document fails under the flag; gate §3e/§3f assert the same on a real spec,
+  a real plan, and both peer controls, so "optional" cannot decay into "the check stopped running".
+- **The conversation half is now the obligation** in the entry point, the `specify`/`plan`
+  contributions, the skill, the autonomy contract and the `AGENTS.md` bridge: outcome first, a term
+  glossed at first use, a plain column beside any table of technical work.
+
+The six retrofits and the seven plan sections stay. Deleting them would be the retro-fit `decisions/0005`
+refuses, and the glossed terms are what keep two different meanings of "ledger" apart. Preset `1.19.0`.
+
 ## [Unreleased]
 
 ### Changed — a coverage report's silence is unmeasured, not uncovered

@@ -4,25 +4,33 @@
 
 **Created**: 2026-10-24
 
-**Status**: Draft
+**Status**: Draft, narrowed 2026-10-25 (the conversation rule binds; the artifact layer is optional)
 
 **Input**: User description: "speckit is slowing down development due to difficulty understanding it. Ensure each of the specs is explained to a novice clearly in a table column (alongside technical descriptions it may already have), jargon explained in brackets as it is introduced, and make this the standard policy in speckit conversation output."
 
 ## Document Status
 
-**Status changed:** 2026-10-24 (created)
+**Status changed:** 2026-10-24 (created) · 2026-10-25 (narrowed: the mandatory `## In Plain Terms` layer became optional, and the conversation rule became the obligation — owner ruling, `decisions/0009-the-rule-is-for-the-chat.md`)
 
-**Approved by:** not yet approved · **Authority:** owner request of 2026-10-24; implementation proceeds on the owner's "implement unless my approval or decision are absolutely necessary"
+**Approved by:** not yet approved · **Authority:** owner request of 2026-10-24, narrowed by the owner on 2026-10-25: *"I don't need plain language in the plan documents, just in the chat, because the documents are AI facing first."*
+
+**What the narrowing changed.** US4 and FR-012 are now the obligation: what the kit *says* must be
+followable. The section on a specification is offered rather than demanded, so US1–US3 describe content
+a document may carry and a check that keeps it honest where it is carried. Nothing already written was
+deleted — the seven documents that carry the section are accepted or drafted content, and `decisions/0005`
+refuses to retro-fit accepted documents in either direction — but a document without one is no longer
+incomplete.
 
 **Workflow:** full spec-driven · **Companion:** `docs/research/plain-language-2026-10.md` (informative; three research rounds, the standards, the evidence limits, and the measured peer check)
 
 ## In Plain Terms
 
-This feature adds a short, plainly written layer to every specification: a paragraph saying what the
-feature does, a table that gives each requirement a one-sentence explanation beside its identifier (the
-`FR-001`-style label the requirement carries), and a list of the specialist words the document uses. It
-also makes the same habit the standing rule for anything the kit says in a conversation, not only for
-the documents it writes.
+This feature makes plain writing the standing rule for anything the kit says in a conversation: the
+outcome comes first, a specialist word is explained where it first appears, and a table about technical
+work carries a column saying what each row means. It also leaves a specification free to explain itself
+beside its requirements — a paragraph, a table giving each requirement a one-sentence explanation
+beside its identifier (the `FR-001`-style label the requirement carries), and the document's specialist
+words — with a check that keeps that layer true where a document chooses to carry it.
 
 A few words recur below. A **gloss** (a short explanation in brackets, right after the word it explains)
 is where a specialist term is first met. **Coverage** (every identifier appearing in the table) is what
@@ -37,15 +45,15 @@ score.
 | US2 | A word like "informative" or "staleness" is explained where it first appears, so the reader is not left guessing. | US2 — first-use glosses and a terms table |
 | US3 | The explanation cannot quietly fall out of date: if a requirement is added without an explanation, the check fails. | US3 — coverage and staleness check in the gate |
 | US4 | The habit applies to chat replies too, not just to files. | US4 — entry point, prepends, skill, bridge |
-| FR-001–FR-003 | Every spec must have the section, must open it with a short paragraph, and must use a table with a fixed shape. | FR-001, FR-002, FR-003 |
+| FR-001–FR-003 | A spec may carry the section; when it does, it opens with a short paragraph and uses a table with a fixed shape. | FR-001, FR-002, FR-003 |
 | FR-004–FR-005 | Every story, requirement and success criterion must appear in exactly one row; a gap, a repeat or an unknown identifier is an error. | FR-004, FR-005 |
 | FR-006–FR-007 | The explanation may describe but may not command, and it must stay short instead of restating the requirement. | FR-006, FR-007 |
 | FR-008–FR-009 | The document lists its own specialist words, and each one is bracketed the first time it is used. | FR-008, FR-009 |
-| FR-010 | The check runs on its own, runs in the gate, and is tested against both a good and four broken specs. | FR-010 |
+| FR-010 | The check runs on its own and in the gate, tolerates a spec that chose not to explain itself, and still fails one that explains itself wrongly. | FR-010 |
 | FR-011 | The rule is installed with the kit and appears wherever the agent reads its instructions. | FR-011 |
 | FR-012–FR-013 | No readability score may be used as a gate, and the documents must not pretend an explanation proves understanding. | FR-012, FR-013 |
-| SC-001 | All six existing specs gain the section, with every identifier covered once. | SC-001 |
-| SC-002 | A correct spec that lacks the section is rejected — demonstrated on a peer project's spec. | SC-002 |
+| SC-001 | The six existing specs carry the section, each identifier is covered once, and the check is green over them. | SC-001 |
+| SC-002 | A spec that never opted in is accepted, and rejected by the same check when a project demands the layer — demonstrated on a peer project's spec. | SC-002 |
 | SC-003 | No explanation cell in the repository commands anything. | SC-003 |
 | SC-004 | Every listed specialist word is glossed where it first appears. | SC-004 |
 | SC-005 | Adding a requirement without a row fails the gate, demonstrated and then reverted. | SC-005 |
@@ -162,7 +170,7 @@ exit naming that identifier; add the row, and confirm it passes.
 
 ---
 
-### User Story 4 - The habit applies to conversation, not just files (Priority: P3)
+### User Story 4 - The habit applies to conversation, not just files (Priority: P1 — the surviving half)
 
 An owner reads the agent's reply to a technical step and can follow it: the outcome comes first, a
 specialist term is explained where it appears, and a table summarising technical work carries a plain
@@ -207,8 +215,9 @@ step prepends, the skill and the `AGENTS.md` bridge, and confirm each states the
 
 **The section (US1)**
 
-- **FR-001**: Every specification MUST contain a section headed `## In Plain Terms`, placed before the
-  first `### User Story` heading.
+- **FR-001**: A specification MAY contain a section headed `## In Plain Terms`. Where it does, the
+  section MUST precede the first `### User Story` heading, and the rules below apply to it. Where it
+  does not, nothing is missing and no check may report a finding — the layer is offered, not demanded.
 - **FR-002**: That section MUST open with at least two sentences of prose saying what the feature does,
   before any table.
 - **FR-003**: It MUST contain a table whose header contains the columns `Item`, `In plain words` and
@@ -237,10 +246,13 @@ step prepends, the skill and the `AGENTS.md` bridge, and confirm each states the
 
 - **FR-010**: The check MUST be a standalone script that exits `0` for a conformant spec, `1` for a
   finding, and `2` for a usage error, MUST be installed into adopter projects, and MUST be run by the
-  kit's gate over every spec.
+  kit's gate over every spec. A document without the section MUST NOT be reported as a finding unless
+  the caller passes `--require-section`, which a project that wants the layer everywhere puts in its
+  own verify manifest.
 - **FR-011**: A fixture corpus MUST include a conformant spec and one fixture per failure shape —
   missing section, uncovered identifier, normative keyword, unglossed term — and the gate MUST assert
-  that each is rejected.
+  that each is rejected. It MUST also assert both directions of the opt-in contract on a real
+  document: an absent layer passes, and `--require-section` rejects the same document.
 
 **Policy (US4)**
 
@@ -266,10 +278,12 @@ step prepends, the skill and the `AGENTS.md` bridge, and confirm each states the
 
 ### Measurable Outcomes
 
-- **SC-001**: **6 of 6** accepted specs contain the section, **100%** of their `US`/`FR`/`SC`
-  identifiers are covered exactly once, and **zero** identifiers are uncovered.
-- **SC-002**: A spec that is section-conformant but has no plain layer is rejected — demonstrated on a
-  peer project's specification with **zero** rows found.
+- **SC-001**: **6 of 6** accepted specs carry the section — an observation of the corpus, not an
+  obligation since 2026-10-25 — **100%** of their `US`/`FR`/`SC` identifiers are covered exactly once,
+  and **zero** identifiers are uncovered.
+- **SC-002**: A spec that is section-conformant and has no plain layer is **accepted** by default, and
+  rejected by the same check under `--require-section` — both demonstrated on a peer project's
+  specification with **zero** rows found.
 - **SC-003**: **Zero** `In plain words` cells in the repository contain a normative keyword.
 - **SC-004**: **100%** of terms in every terms table carry a bracketed gloss at first use, and **zero**
   bracketed glosses exceed the 25-word cap.
@@ -289,8 +303,9 @@ step prepends, the skill and the `AGENTS.md` bridge, and confirm each states the
 - **Judging whether an explanation is accurate or understood.** Not machine-checkable here; the spec
   says so and the manual check is named.
 - **Translating specifications.** One language, stated as an assumption.
-- **A plain-language layer on `plan.md` and `tasks.md`.** The owner asked for the specs; plans and tasks
-  carry the conversation policy instead. Parked, not refused.
+- **A plain-language layer as an obligation.** Offering it is in scope; demanding it is not, since the
+  2026-10-25 ruling. `008-plain-plans` offers the same layer on `plan.md`; `tasks.md` is not offered at
+  all, because a task is one sentence with a verifiable outcome.
 
 ## Evidence Base
 
@@ -359,10 +374,11 @@ acceptable risk: coverage prevents silence, and review catches error.
 
 ## Goals
 
-- A reader who was not in the room can tell what each requirement binds, in one row, without decoding
-  vocabulary.
-- The explanation cannot fall behind the requirements without the gate saying so.
-- The same habit is visible in the agent's conversation output, not only in the files.
+- The agent's conversation output is followable by the person it is written for: outcome first, terms
+  glossed at first use, a plain column beside any technical table.
+- A document that does explain itself cannot fall behind its own requirements without the gate saying
+  so — and a document that does not is not treated as incomplete.
+- The artifacts stay optimised for the reader who acts on them first, which is an agent.
 
 ## Non-Goals
 

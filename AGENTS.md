@@ -21,11 +21,13 @@ is autonomous; only the irreversible, external, or costly needs approval.
 
 **Write it so the work can be followed.** Lead with the outcome in ordinary words, explain a specialist
 term in short brackets the first time you use it, and give a table that summarises technical work a
-column saying what each row means. Every spec and every plan carries `## In Plain Terms` for the same
-reason — and a plan's row names the design choice and points at the section or file that carries it.
-`python3 .specify/scripts/check-plain-terms.py <spec-or-plan>` checks the section exists, covers every
-identifier, points each plan row at the design, and glosses every listed term — it cannot check
-whether the explanation is right, so that part is still yours.
+column saying what each row means. A spec or plan MAY carry `## In Plain Terms` for the same reason —
+and a plan's row names the design choice and points at the section or file that carries it — but the
+obligation is on the conversation, not the artifact: these documents are read by an agent first
+(`decisions/0009` in the kit). `python3 .specify/scripts/check-plain-terms.py <spec-or-plan>` tolerates
+the section's absence, and where it exists checks that it covers every identifier, points each plan row
+at the design, and glosses every listed term — it cannot check whether the explanation is right, so
+that part is still yours. Add `--require-section` to demand one everywhere.
 
 ## Two rules that are enforced, not advised
 

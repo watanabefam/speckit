@@ -97,10 +97,17 @@ competing with the spec, and nobody will know which one to follow.
 
 ## In Plain Terms
 
-**This section is required, and it is informative.** It exists so a reader who was not in the room can
+**This section is optional, and it is informative.** It exists so a reader who was not in the room can
 tell what the feature does before meeting the numbered requirements. It is not a second specification:
 where it and the normative text disagree, the normative text wins, and the disagreement is a defect in
 the explanation.
+
+**Why optional.** The owner's ruling of 2026-10-25 (`decisions/0009-the-rule-is-for-the-chat.md`): these
+artifacts are read by an agent first, so a plainly written layer is a convenience for the human who
+reads second, not an obligation on every document. The conversation is where the rule binds; this
+section is where it *may* show up in the artifact. What the kit does enforce is that a section you do
+carry stays true — leave it out and the checker says so and passes, fill it in and it must cover every
+identifier. A project that wants it everywhere passes `--require-section`.
 
 **Place it before the first `### User Story` heading** — a reader who needs the explanation should not
 have to pass the requirements to find it.
@@ -141,7 +148,8 @@ Three parts, in this order:
   term is not the same as introducing it; nor does the metadata above this section, which is status
   rather than reading and may quote the requester verbatim. This is the convention GOV.UK and Google both document; neither supports burying a
   clause in a bracket. If the term needs a sentence, write a sentence and keep the bracket for the term.
-- **Nothing is exempt for being obvious.** A short spec needs a short row, not no row.
+- **Once you keep the section, nothing in it is exempt for being obvious.** A short spec needs a short
+  row, not a heading with nothing under it.
 
 **What the check cannot do, stated so nobody trusts it further than it goes:** it verifies that the
 section exists, that every identifier is covered once, that no cell commands, and that the listed terms

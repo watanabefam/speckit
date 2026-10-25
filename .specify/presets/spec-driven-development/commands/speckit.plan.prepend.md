@@ -132,9 +132,11 @@ A plan introduces design terms, and every new one is a small cost to the reader.
 The plan is read by whoever implements it, and increasingly by whoever reviews it without having
 written it. Precision without a way in is the failure this guards against.
 
-### Fill `## In Plain Terms` as you design
+### `## In Plain Terms` is optional — fill it when it earns its place
 
-The resolved plan template requires this section. Write it **while designing**, not afterwards:
+The resolved plan template offers this section and does not demand one (owner ruling 2026-10-25,
+`decisions/0009-the-rule-is-for-the-chat.md`: the plan is read by the implementing agent first). If you
+write it, write it **while designing**, not afterwards:
 
 - **Place it before `## Technical Context`**, after the metadata block and `## Summary`. The reader
   who needs the explanation should not have to pass the design to find it.

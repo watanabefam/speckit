@@ -9,11 +9,17 @@
 
 ## In Plain Terms
 
-**This section is required, and it is informative.** It exists so a reader who did not write the plan
+**This section is optional, and it is informative.** It exists so a reader who did not write the plan
 can tell what will be built before meeting the design vocabulary — the components, the mechanisms,
 the trade-offs, and the identifiers carried over from the spec. It is not a second design: where it
 and the plan's technical sections disagree, the plan wins, and the disagreement is a defect in the
 explanation.
+
+**Why optional.** The owner's ruling of 2026-10-25 (`decisions/0009-the-rule-is-for-the-chat.md`): the
+plan is read by the implementing agent first, so this layer is a convenience for the human who reads
+second. What still holds is that a plan carrying it must be true to the design — the same opt-in
+contract the specification template states, with `--require-section` for a project that wants the
+layer everywhere.
 
 **Place it before `## Technical Context`** — where that heading is absent, before every top-level
 section other than `## Summary`. A reader who needs the explanation should not have to pass the

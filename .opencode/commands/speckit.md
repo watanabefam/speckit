@@ -126,14 +126,17 @@ a file was edited. State what you ran and what it showed. If something is unveri
 constraints, assumptions, risks, open questions. At the end: what changed, what remains open, what
 needs approval, what was verified, which downstream artifacts are affected.
 
-**Plain language is part of the deliverable.** The artifacts explain themselves to a reader who was not
-in the room: every spec and every plan carries `## In Plain Terms` (a short paragraph, a row per
-identifier, and the document's own terms — and, for a plan, a pointer to where the design lives).
-Every reply leads with what happened in ordinary words, glosses a specialist term the first time it
-uses it (`short brackets — never a clause`), and gives any table that summarises technical work a
-column saying what each row means — including a table about a design decision. This never licenses vagueness: the
-requirement keeps its precision, the explanation sits beside it and binds nothing. A checked rule
-(`scripts/check-plain-terms.py`) covers the artifact; the reply half is policy, enforced by review.
+**Plain language is part of the reply.** The owner's ruling of 2026-10-25
+(`decisions/0009-the-rule-is-for-the-chat.md`): the artifacts are read by an agent first, so they are
+written for that reader, and the obligation to write plainly lives in the conversation. Every reply
+leads with what happened in ordinary words, glosses a specialist term the first time it uses it
+(`short brackets — never a clause`), and gives any table that summarises technical work a column
+saying what each row means — including a table about a design decision. A spec or plan MAY carry
+`## In Plain Terms` — a short paragraph, a row per identifier, and the document's own terms. There,
+a plan's row names the design choice and points at where the design lives. Where one does, it must stay
+true — `scripts/check-plain-terms.py` fails it otherwise — and where one does not, nothing is missing.
+This never licenses vagueness: the requirement keeps its precision. The reply half is policy, enforced
+by review — the one half a command cannot check.
 
 ## Ask only what matters
 

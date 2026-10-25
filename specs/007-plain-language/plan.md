@@ -2,6 +2,11 @@
 
 **Branch**: `007-plain-language` | **Date**: 2026-10-24 | **Spec**: `specs/007-plain-language/spec.md`
 
+**Narrowed 2026-10-25** (`decisions/0009-the-rule-is-for-the-chat.md`): the section is now offered rather
+than required. Read "required" below as "offered", and every conformance rule as applying to a
+specification that carries the section. The conversation half of this plan is unaffected and is now the
+obligation.
+
 ## In Plain Terms
 
 This plan adds one required, informative section to each specification — a paragraph, a row per

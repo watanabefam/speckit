@@ -2,7 +2,10 @@
 """Fixture harness for `scripts/check-plain-terms.py`.
 
 Fourteen fixtures — eight specifications, six plans — each of which must fail (or pass, for the
-control) for one named reason, plus nine properties that generate documents instead of reading them. The discipline is the one
+control) for one named reason, plus ten properties that generate documents instead of reading them. Two
+of the fixtures (`no-section`, `plan-no-section`) are run with `--require-section`, because declining
+the layer is a legitimate choice since 2026-10-25 and only a project that demands it can call the
+absence a finding. The discipline is the one
 `evals/fixtures/verify/harness.py` already uses: a check that has never been observed failing is not
 evidence, so every failure shape below was written before the checker was.
 
@@ -52,6 +55,10 @@ PLAN_CASES = {
     "plan-unglossed": (1, "has no bracketed gloss"),
 }
 
+# The two fixtures whose reason for failing is the absence of the section: they only fail when the
+# section is demanded, which is now a per-project decision (`--require-section`).
+REQUIRED_SECTION_CASES = {"no-section", "plan-no-section"}
+
 failures: list[str] = []
 checks = 0
 
@@ -76,8 +83,9 @@ def report(ok: bool, label: str, detail: str = "") -> None:
 def run_case(name: str) -> None:
     want_exit, needle = CASES[name]
     path = HERE / name / "spec.md"
+    flag = ["--require-section"] if name in REQUIRED_SECTION_CASES else []
     proc = subprocess.run(
-        [sys.executable, str(CHECKER), str(path)], capture_output=True, text=True
+        [sys.executable, str(CHECKER), *flag, str(path)], capture_output=True, text=True
     )
     out = proc.stdout + proc.stderr
     report(
@@ -90,8 +98,9 @@ def run_case(name: str) -> None:
 def run_plan_case(name: str) -> None:
     want_exit, needle = PLAN_CASES[name]
     path = HERE / name / "plan.md"
+    flag = ["--require-section"] if name in REQUIRED_SECTION_CASES else []
     proc = subprocess.run(
-        [sys.executable, str(CHECKER), str(path)], capture_output=True, text=True
+        [sys.executable, str(CHECKER), *flag, str(path)], capture_output=True, text=True
     )
     out = proc.stdout + proc.stderr
     report(
@@ -134,11 +143,11 @@ def build(ids: list[str], rows: list[tuple[str, str, str]], terms=("fixture-valu
     return "\n".join(lines) + "\n"
 
 
-def check_text(module, text: str, kind: str = "spec"):
+def check_text(module, text: str, kind: str = "spec", require_section: bool = False):
     with tempfile.NamedTemporaryFile("w", suffix=".md", delete=False) as fh:
         fh.write(text)
         path = fh.name
-    findings, table = module.check_file(path, kind)
+    findings, table = module.check_file(path, kind, require_section)
     Path(path).unlink()
     return findings, table
 
@@ -350,8 +359,36 @@ def p_009(module, rng: random.Random) -> None:
            "P-009 the same text under plan rules fails the three-sentence rule", str(kinds(findings)))
 
 
+def p_010(module, rng: random.Random) -> None:
+    """Declining the layer passes; demanding it fails. The two are different questions.
+
+    Without this, "optional" would be indistinguishable from "the check stopped running": a checker
+    that returned nothing for every document would satisfy the permissive half of the contract, so
+    both halves are asserted on the same text.
+    """
+    bare_spec = ("# Generated specification\n\n## User Scenarios & Testing\n\n"
+                 "### User Story 1 - Generated\n\nA generated story.\n\n"
+                 "## Requirements\n\n- **FR-001**: Generated text.\n")
+    findings, table = check_text(module, bare_spec, "spec")
+    report(not findings and table.get("declined") == "spec",
+           "P-010 a spec without a plain layer passes, and says it declined", str(kinds(findings)))
+    findings, _ = check_text(module, bare_spec, "spec", require_section=True)
+    report("no-section" in kinds(findings),
+           "P-010 the same spec fails when the section is required", str(kinds(findings)))
+
+    bare_plan = ("# Generated plan\n\n## Technical Context\n\n- Generated details.\n\n"
+                 "## Architecture\n\n- **FR-001**: Generated requirement line.\n")
+    findings, table = check_text(module, bare_plan, "plan")
+    report(not findings and table.get("declined") == "plan",
+           "P-010 a plan without a plain layer passes, and says it declined", str(kinds(findings)))
+    findings, _ = check_text(module, bare_plan, "plan", require_section=True)
+    report("no-section" in kinds(findings),
+           "P-010 the same plan fails when the section is required", str(kinds(findings)))
+
+
 PROPERTIES = {"P-001": p_001, "P-002": p_002, "P-003": p_003, "P-004": p_004,
-              "P-005": p_005, "P-006": p_006, "P-007": p_007, "P-008": p_008, "P-009": p_009}
+              "P-005": p_005, "P-006": p_006, "P-007": p_007, "P-008": p_008, "P-009": p_009,
+              "P-010": p_010}
 
 
 def main() -> int:

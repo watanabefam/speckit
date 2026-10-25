@@ -1,5 +1,9 @@
 # 0007 — Explanations sit beside the requirements, are informative, and are checked for coverage
 
+> **Narrowed 2026-10-25 by `0009`.** The section is now offered rather than demanded, and the rule that
+> binds is the conversation one (§5 below). Everything this decision says about *how* an explanation is
+> written and checked still holds wherever a document carries one.
+
 ## Context
 
 The owner reports that the workflow slows development down because the artifacts are hard to

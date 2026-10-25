@@ -1498,10 +1498,12 @@ if [ -f "$CB" ]; then
   rm -rf "$CBFD"
 fi
 
-hdr "3e. plain terms — a spec a newcomer can follow"
-# The spec template now REQUIRES `## In Plain Terms`. A required section that nothing verifies becomes a
-# half-truth the first time a requirement is added without a row, so the checker, the corpus and the
-# policy surfaces are asserted here rather than left to review.
+hdr "3e. plain terms — a spec that explains itself is checked"
+# Since the owner's ruling of 2026-10-25 (`decisions/0009`) the section is OFFERED, not demanded: the
+# documents are AI-facing first, so a plain layer is a convenience for the human who reads second. Both
+# halves of that contract are asserted here — a document without the section passes, and a document
+# that carries one must cover every identifier — because "optional" that is only ever tested in the
+# permissive direction is indistinguishable from a checker that stopped running.
 CPT="$ROOT/scripts/check-plain-terms.py"
 CPT_INST="$ROOT/.specify/scripts/check-plain-terms.py"
 if [ -f "$CPT" ]; then
@@ -1518,10 +1520,11 @@ elif [ -f "$CPT_INST" ]; then
 else
   bad "the installed plain-terms check is missing — /speckit.specify points at a script that will not run"
 fi
-if grep -q '^## In Plain Terms' "$ROOT/preset/templates/spec-addendum.md"; then
-  ok "the spec template requires the section"
+if grep -q '^## In Plain Terms' "$ROOT/preset/templates/spec-addendum.md" \
+   && grep -q 'This section is optional' "$ROOT/preset/templates/spec-addendum.md"; then
+  ok "the spec template offers the section and states that it is optional"
 else
-  bad "the spec template no longer requires '## In Plain Terms' — the checker would be checking a rule nobody states"
+  bad "the spec template no longer offers '## In Plain Terms' as an optional layer — the checker would be enforcing a shape nobody describes"
 fi
 
 if [ -f "$CPT" ]; then
@@ -1550,7 +1553,9 @@ if [ -f "$CPT" ]; then
     _name="${_probe%%:*}"; _rest="${_probe#*:}"; _want="${_rest%%:*}"; _needle="${_rest#*:}"
     # The capture must not abort the gate: a fixture is SUPPOSED to exit nonzero, and under `set -e`
     # a plain assignment would end the run at the first expected failure.
-    if _out="$(python3 "$CPT" "$ROOT/evals/fixtures/plain-terms/$_name/spec.md" 2>&1)"; then _rc=0; else _rc=$?; fi
+    # `--require-section` throughout: the two absence fixtures only fail when the layer is demanded,
+    # and running the rest under the same flag proves the flag does not change the conformance rules.
+    if _out="$(python3 "$CPT" --require-section "$ROOT/evals/fixtures/plain-terms/$_name/spec.md" 2>&1)"; then _rc=0; else _rc=$?; fi
     if [ "$_rc" = "$_want" ] && printf '%s' "$_out" | grep -qF "$_needle"; then
       ok "fixture '$_name' exits $_want for the stated reason"
     else
@@ -1565,10 +1570,17 @@ if [ -f "$CPT" ]; then
   if [ -n "$_first" ]; then
     awk 'BEGIN{drop=0} /^## In Plain Terms[[:space:]]*$/{drop=1; next} /^## /{drop=0} !drop' \
       "$_first" > "$_teeth/spec.md"
+    # Both sides, on a real document: without the flag an absent layer is a choice and passes; with it
+    # the same file fails. A one-sided assertion here would leave "optional" unverifiable.
     if python3 "$CPT" "$_teeth/spec.md" >/dev/null 2>&1; then
-      bad "the checker accepted a real spec with its explanation removed"
+      ok "a real spec with its explanation removed passes — the layer is optional"
     else
-      ok "the checker rejects a real spec with its explanation removed"
+      bad "the checker failed a real spec for not carrying an optional section"
+    fi
+    if python3 "$CPT" --require-section "$_teeth/spec.md" >/dev/null 2>&1; then
+      bad "--require-section accepted a real spec with its explanation removed"
+    else
+      ok "--require-section rejects the same spec, so the demand still has teeth"
     fi
   fi
   rm -rf "$_teeth"
@@ -1576,11 +1588,12 @@ if [ -f "$CPT" ]; then
   # The generated properties: 8 cases and 4 properties, one line each.
   if _pt="$(python3 "$ROOT/evals/fixtures/plain-terms/harness.py" --all 2>&1)"; then
     _pn="$(printf '%s\n' "$_pt" | grep -c '^  ok ')"
-    # 66 spec checks, then 6 plan cases and 19 plan property checks (feature 008).
-    if [ "$_pn" -ge 91 ]; then
+    # 66 spec checks, 6 plan cases, 19 plan property checks (feature 008), and 4 opt-in checks
+    # (P-010: an absent layer passes, and fails when demanded).
+    if [ "$_pn" -ge 95 ]; then
       ok "plain-terms harness: $_pn generated and fixture checks pass"
     else
-      bad "plain-terms harness passed only $_pn checks (expected 91)"
+      bad "plain-terms harness passed only $_pn checks (expected 95)"
     fi
   else
     bad "plain-terms harness failed: $(printf '%s\n' "$_pt" | grep 'FAIL' | head -3 | tr '\n' ' ')"
@@ -1597,13 +1610,13 @@ while IFS='|' read -r _surface _needle; do
     bad "plain-language rule missing from $_surface (expected '$_needle')"
   fi
 done <<'SURFACES'
-commands/speckit.md|Plain language is part of the deliverable
+commands/speckit.md|Plain language is part of the reply
 preset/commands/speckit.specify.prepend.md|In Plain Terms
 preset/commands/speckit.plan.prepend.md|specification's vocabulary
 preset/commands/speckit.tasks.prepend.md|Say the outcome, then the mechanics
 preset/commands/speckit.implement.prepend.md|reply is part of the deliverable
 preset/commands/speckit.converge.prepend.md|Close in a form the owner can act on
-skill/spec-driven-development/SKILL.md|Explain beside the requirement
+skill/spec-driven-development/SKILL.md|Say it plainly in the reply
 global/autonomy-contract.md|Write so the work can be followed
 bin/speckit-init|Write it so the work can be followed
 SURFACES
@@ -1613,26 +1626,35 @@ SURFACES
 # corpus of retrofitted specs cannot provide.
 PEER_SPEC="$ROOT/.scratch/peers/citekit/specs/001-web-search-source/spec.md"
 if [ -f "$PEER_SPEC" ] && [ -f "$CPT" ]; then
+  # A real document that never opted in: tolerated by default, rejected when demanded. This is the
+  # negative control the corpus of retrofitted specs cannot provide — and now it controls both halves.
   if python3 "$CPT" "$PEER_SPEC" >/dev/null 2>&1; then
-    bad "the checker accepted a peer spec that has no plain layer"
+    ok "a peer spec with no plain layer is accepted — the layer is optional"
   else
-    ok "the checker rejects a conformant peer spec that has no plain layer"
+    bad "the checker failed a peer spec only for not carrying an optional section"
+  fi
+  if python3 "$CPT" --require-section "$PEER_SPEC" >/dev/null 2>&1; then
+    bad "--require-section accepted a peer spec that has no plain layer"
+  else
+    ok "--require-section rejects the same peer spec, so the demand still has teeth"
   fi
 else
   skip 'no peer spec in .scratch/peers (the peer sweep is not part of a fresh checkout)'
 fi
 
-hdr "3f. plain plans — a design a newcomer can follow"
-# The same script, in its second mode (`decisions/0008`). The plan template demands the section, the
-# corpus explains its design, six plan fixtures are rejected for their own reasons, and two teeth checks
-# prove the mode is a real branch rather than a flag that changes the banner.
+hdr "3f. plain plans — a plan that explains its design is checked"
+# The same script, in its second mode (`decisions/0008`), under the same opt-in contract as 3e
+# (`decisions/0009`): the plan template offers the section, the corpus covers its own design where it
+# carries one, six plan fixtures are rejected for their own reasons, and the teeth checks prove both
+# that an absent layer is tolerated and that `--require-section` still demands it.
 PLAN_TEMPLATE="$ROOT/preset/templates/plan-addendum.md"
 if [ -f "$CPT" ] || [ -f "$ROOT/scripts/check-plain-terms.py" ]; then
   CPT="$ROOT/scripts/check-plain-terms.py"
-  if grep -q '^## In Plain Terms' "$PLAN_TEMPLATE" 2>/dev/null; then
-    ok "the plan template requires the section"
+  if grep -q '^## In Plain Terms' "$PLAN_TEMPLATE" 2>/dev/null \
+     && grep -q 'This section is optional' "$PLAN_TEMPLATE" 2>/dev/null; then
+    ok "the plan template offers the section and states that it is optional"
   else
-    bad "the plan template no longer requires '## In Plain Terms' — plans would have no contract to fill"
+    bad "the plan template no longer offers '## In Plain Terms' as an optional layer"
   fi
 
   # The standing corpus: every plan must explain its design.
@@ -1659,7 +1681,7 @@ if [ -f "$CPT" ] || [ -f "$ROOT/scripts/check-plain-terms.py" ]; then
                 "plan-no-artefact:1:names no section (§) or file" \
                 "plan-unglossed:1:no bracketed gloss"; do
     _name="${_probe%%:*}"; _rest="${_probe#*:}"; _want="${_rest%%:*}"; _needle="${_rest#*:}"
-    if _out="$(python3 "$CPT" "$ROOT/evals/fixtures/plain-terms/$_name/plan.md" 2>&1)"; then _rc=0; else _rc=$?; fi
+    if _out="$(python3 "$CPT" --require-section "$ROOT/evals/fixtures/plain-terms/$_name/plan.md" 2>&1)"; then _rc=0; else _rc=$?; fi
     if [ "$_rc" = "$_want" ] && printf '%s' "$_out" | grep -qF "$_needle"; then
       ok "plan fixture '$_name' exits $_want for the stated reason"
     else
@@ -1674,9 +1696,14 @@ if [ -f "$CPT" ] || [ -f "$ROOT/scripts/check-plain-terms.py" ]; then
     awk 'BEGIN{drop=0} /^## In Plain Terms[[:space:]]*$/{drop=1; next} /^## /{drop=0} !drop' \
       "$_planfile" > "$_pteeth/plan.md"
     if python3 "$CPT" "$_pteeth/plan.md" >/dev/null 2>&1; then
-      bad "the checker accepted a real plan with its explanation removed"
+      ok "a real plan with its explanation removed passes — the layer is optional"
     else
-      ok "the checker rejects a real plan with its explanation removed"
+      bad "the checker failed a real plan for not carrying an optional section"
+    fi
+    if python3 "$CPT" --require-section "$_pteeth/plan.md" >/dev/null 2>&1; then
+      bad "--require-section accepted a real plan with its explanation removed"
+    else
+      ok "--require-section rejects the same plan, so the demand still has teeth"
     fi
   fi
   rm -rf "$_pteeth"
@@ -1699,11 +1726,11 @@ if [ -f "$CPT" ] || [ -f "$ROOT/scripts/check-plain-terms.py" ]; then
     fi
   done <<'PLANSURFACES'
 preset/templates/plan-addendum.md|row states the design choice and its reason
-preset/commands/speckit.plan.prepend.md|Fill `## In Plain Terms` as you design
-commands/speckit.md|every spec and every plan carries
-skill/spec-driven-development/SKILL.md|Specs and plans carry
+preset/commands/speckit.plan.prepend.md|is optional — fill it when it earns its place
+commands/speckit.md|a plan's row names the design choice
+skill/spec-driven-development/SKILL.md|MAY carry
 global/autonomy-contract.md|Name where a design lives
-bin/speckit-init|every plan carries
+bin/speckit-init|a plan's row names the design choice
 PLANSURFACES
 
   # A peer project's plan: well structured, no plain layer, no requirement ids. It is the negative
@@ -1711,9 +1738,14 @@ PLANSURFACES
   PEER_PLAN="$ROOT/.scratch/peers/citekit/specs/001-web-search-source/plan.md"
   if [ -f "$PEER_PLAN" ]; then
     if python3 "$CPT" "$PEER_PLAN" >/dev/null 2>&1; then
-      bad "the checker accepted a peer plan that has no plain layer"
+      ok "a peer plan with no plain layer is accepted — the layer is optional"
     else
-      ok "the checker rejects a peer plan that has no plain layer"
+      bad "the checker failed a peer plan only for not carrying an optional section"
+    fi
+    if python3 "$CPT" --require-section "$PEER_PLAN" >/dev/null 2>&1; then
+      bad "--require-section accepted a peer plan that has no plain layer"
+    else
+      ok "--require-section rejects the same peer plan, so the demand still has teeth"
     fi
   else
     skip 'no peer plan in .scratch/peers (the peer sweep is not part of a fresh checkout)'

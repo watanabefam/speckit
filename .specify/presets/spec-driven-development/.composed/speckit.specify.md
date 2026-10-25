@@ -82,11 +82,14 @@ continue. A question whose answer changes nothing is noise.
 Every inference you make goes in Assumptions. Do not invent a requirement to fill a gap. An
 invented requirement is worse than a recorded assumption, because it looks decided.
 
-### Fill `## In Plain Terms` as you write the requirement
+### `## In Plain Terms` is optional — fill it when it earns its place
 
-The template requires an explanation layer, and it is **informative**: it sits beside the requirement
-and never replaces it. Write the row at the same time as the requirement, not afterwards — an
-explanation written later restates the requirement instead of translating it.
+The template offers an explanation layer and does not demand one: these artifacts are read by an agent
+first, so a plain layer serves the human who reads second (owner ruling 2026-10-25,
+`decisions/0009-the-rule-is-for-the-chat.md`). Leave it out and the checker passes; fill it in and the
+checker requires it to stay true. It is **informative** either way: it sits beside the requirement and
+never replaces it. If you do write it, write the row at the same time as the requirement, not
+afterwards — an explanation written later restates the requirement instead of translating it.
 
 - **One row per thing a reader has to understand.** Group identifiers when they are one idea, but every
   `US`, `FR` and `SC` gets exactly one row.

@@ -4,23 +4,29 @@
 
 **Created**: 2026-10-24
 
-**Status**: Draft
+**Status**: Draft, narrowed 2026-10-25 (the layer is offered on a plan; the design-talk rule in the reply binds)
 
 **Input**: User description: "Add the same plain-language layer to plan.md, so the design is readable by the person who did not write it."
 
 ## Document Status
 
-**Status changed:** 2026-10-24 (created)
+**Status changed:** 2026-10-24 (created) · 2026-10-25 (narrowed: the plan layer became optional, per the owner's ruling that the documents are AI-facing first — `decisions/0009-the-rule-is-for-the-chat.md`)
 
-**Approved by:** not yet approved · **Authority:** owner instruction of 2026-10-24 to research and then implement unless a decision is needed
+**Approved by:** not yet approved · **Authority:** owner instruction of 2026-10-24, narrowed by the owner on 2026-10-25: *"I don't need plain language in the plan documents, just in the chat, because the documents are AI facing first."*
+
+**What the narrowing changed.** FR-011 and US4 are the obligation now: how the agent *talks about a
+design* — outcome first, design terms glossed, a plain column beside any design table. The section on a
+plan is offered, with the rules below applying to a plan that carries one. Nothing already written was
+deleted: the seven plans are accepted or drafted content (`decisions/0005`).
 
 **Workflow:** full spec-driven · **Companion:** `docs/research/plans-plain-language-2026-10.md` (informative; four research rounds, the primary citations, and where the evidence stops)
 
 ## In Plain Terms
 
-This feature gives every implementation plan the same short explanation layer a specification already
-has: a paragraph saying what will be built and why that shape, a table giving each requirement the
-design choice made for it, and a list of the mechanism words the plan uses. A **gloss** (a short
+This feature lets an implementation plan carry the same short explanation layer a specification may
+carry: a paragraph saying what will be built and why that shape, a table giving each requirement the
+design choice made for it, and a list of the mechanism words the plan uses. It also makes design talk
+followable in conversation, which is the half that binds. A **gloss** (a short
 explanation in brackets, right after the word it explains) keeps those words from being a wall, and
 **coverage** (every requirement identifier appearing in the document also appearing in the table)
 keeps the explanation from falling behind the design. Each row is a **design decision** (a choice
@@ -35,15 +41,15 @@ reader is sent to the design instead of back to the specification.
 | US2 | The plan's own words — "ledger", "falsify", "coverage report" — are explained where they first appear. | US2 — terms table and first-use glosses |
 | US3 | A row must point at where the design lives, and the rows must keep up with the requirements. | US3 — artefact reference and identifier coverage |
 | US4 | The habit applies to how the agent talks about design, not only to the file. | US4 — plan contribution, entry point, skill, bridge |
-| FR-001–FR-003 | Every plan opens with the section, a real paragraph, and the same table shape specifications use. | FR-001, FR-002, FR-003 |
+| FR-001–FR-003 | A plan may open with the section; when it does, it holds a real paragraph and the same table shape specifications use. | FR-001, FR-002, FR-003 |
 | FR-004–FR-005 | Each requirement gets exactly one row; a gap, a repeat or an unknown identifier is an error. | FR-004, FR-005 |
 | FR-006–FR-007 | Each row points at a section or file, explains the choice rather than restating the requirement, and stays short. | FR-006, FR-007 |
 | FR-008 | The plan lists its mechanism words and brackets each one where it is first used. | FR-008 |
 | FR-009–FR-010 | One checker handles specs and plans, and the gate runs it over every plan with a fixture for each failure shape. | FR-009, FR-010 |
 | FR-011–FR-012 | The rule is installed with the kit, stated where the agent reads it, and never gated on a readability score or claimed to prove understanding. | FR-011, FR-012 |
-| SC-001 | All seven existing plans carry the section, and every requirement they mention is covered once. | SC-001 |
+| SC-001 | The seven existing plans carry the section, and every requirement they mention is covered once — an observation, not an obligation since 2026-10-25. | SC-001 |
 | SC-002 | Every row in every plan names a section or a file, not only an identifier. | SC-002 |
-| SC-003 | A well-structured peer plan with no plain layer is rejected. | SC-003 |
+| SC-003 | A well-structured peer plan with no plain layer is accepted by default and rejected under `--require-section`. | SC-003 |
 | SC-004 | Adding a requirement to a plan without a row fails the gate, demonstrated and then reverted. | SC-004 |
 | SC-005 | Every listed mechanism word is glossed at first use, and no gloss exceeds the cap. | SC-005 |
 | SC-006 | The gate passes and examines more than it did before this feature. | SC-006 |
@@ -161,7 +167,7 @@ ids only and run it again. Both fail, naming the identifier or the row.
 
 ---
 
-### User Story 4 - The habit covers design talk, not only specs (Priority: P3)
+### User Story 4 - The habit covers design talk, not only specs (Priority: P1 — the surviving half)
 
 The agent's reply about a design step leads with the outcome in ordinary words, glosses a design term
 where it appears, and gives any table about the design a column saying what each row means.
@@ -201,9 +207,10 @@ bridge of a fresh install and confirm each states the rule for plans as well as 
 
 **The section (US1)**
 
-- **FR-001**: Every `plan.md` MUST contain a section headed `## In Plain Terms`, placed before
-  `## Technical Context`; where that heading is absent, it MUST precede every top-level section other
-  than `## Summary`.
+- **FR-001**: A `plan.md` MAY contain a section headed `## In Plain Terms`. Where it does, the section
+  MUST precede `## Technical Context` — or, where that heading is absent, every top-level section other
+  than `## Summary` — and the rules below apply. Where it does not, nothing is missing: the layer is
+  offered, not demanded (`decisions/0009`).
 - **FR-002**: The section MUST open with at least three sentences of prose before any table, saying
   what will be built, out of what, and why this shape.
 - **FR-003**: It MUST contain a table whose header contains `Item`, `In plain words` and `Technical`.
@@ -231,10 +238,12 @@ bridge of a fresh install and confirm each states the rule for plans as well as 
 
 - **FR-009**: `scripts/check-plain-terms.py` MUST handle both artifacts, selecting the plan rules by
   file name or an explicit flag, MUST keep exit `0`/`1`/`2`, MUST be installed into adopter projects,
-  and MUST be run by the kit's gate over every plan.
+  and MUST be run by the kit's gate over every plan. A plan without the section MUST NOT be reported as
+  a finding unless the caller passes `--require-section`.
 - **FR-010**: The fixture corpus MUST add one conformant plan and one plan per failure shape — missing
   section, misplaced section, thin paragraph, `Technical` with no artefact, unglossed term — and the
-  gate MUST assert each is rejected for its own reason.
+  gate MUST assert each is rejected for its own reason under `--require-section`, plus that the same
+  plan without the section passes when the flag is absent.
 
 **Policy (US4)**
 
@@ -259,12 +268,12 @@ bridge of a fresh install and confirm each states the rule for plans as well as 
 
 ### Measurable Outcomes
 
-- **SC-001**: **7 of 7** plans contain the section, **100%** of the `FR`/`SC` identifiers they
-  mention are covered exactly once, and **zero** are uncovered.
+- **SC-001**: **7 of 7** plans carry the section — an observation of the corpus — **100%** of the
+  `FR`/`SC` identifiers they mention are covered exactly once, and **zero** are uncovered.
 - **SC-002**: **100%** of plan rows name a section or a backticked artefact in `Technical`, and
   **zero** rows consist only of identifiers.
-- **SC-003**: citekit's plan, which is well structured and has no plain layer, is rejected — the
-  negative control.
+- **SC-003**: citekit's plan, which is well structured and has no plain layer, is accepted by default
+  and rejected under `--require-section` — the negative control for both halves of the opt-in contract.
 - **SC-004**: Adding one requirement identifier to a plan without a row makes the gate fail naming
   it, observed failing and then passing after the row is added.
 - **SC-005**: **100%** of listed terms in every plan carry a bracketed gloss at first use, and
@@ -345,10 +354,11 @@ the layer from collapsing into a copy of the spec.
 
 ## Goals
 
-- A reader who was not in the room can tell what the plan builds and where each design decision
-  lives.
-- The plan's mechanism words are defined where they arrive.
-- The layer cannot drift behind the requirements without the gate saying so.
+- An agent reporting on a design leads with what was chosen and why, and points at where the design
+  lives rather than reciting identifiers.
+- A plan that explains its design cannot drift behind its own requirements without the gate saying so,
+  and a plan that does not explain itself is not treated as incomplete.
+- The plan stays optimised for the reader who acts on it first, which is the implementing agent.
 
 ## Non-Goals
 

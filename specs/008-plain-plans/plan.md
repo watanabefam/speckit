@@ -2,6 +2,11 @@
 
 **Branch**: `008-plain-plans` | **Date**: 2026-10-24 | **Spec**: `specs/008-plain-plans/spec.md`
 
+**Narrowed 2026-10-25** (`decisions/0009-the-rule-is-for-the-chat.md`): the plan layer is offered rather
+than required. Read "required" below as "offered", and the artefact rule and placement rule as applying
+to a plan that carries the section. The design-talk half in the reply is unaffected and is now the
+obligation.
+
 ## Summary
 
 Add `kind` to the checker, plan rules to the template, five plan fixtures and one generated property
