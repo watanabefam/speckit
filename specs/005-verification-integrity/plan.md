@@ -19,6 +19,7 @@ arithmetic stays in one place instead of four.
 | Item | In plain words | Technical |
 | --- | --- | --- |
 | FR-001–FR-006 | A run counts what it examined; nothing examined is a failure; a skip is not a pass; and a check with no outside expected value, or one whose control passes, is refused rather than counted. | `bin/speckit-verify`; §Architecture Overview |
+| FR-044 | A command that states its own count is believed over a number scraped from a test runner's summary, because the two count different things; two different counts are reported as unknown, and a stated zero is never a pass. | `declared_examined()` in `bin/speckit-verify`; §Interfaces and Contracts (`contracts/verify-cli.md`, "Adapter counts") |
 | FR-007–FR-009 | The criteria tally is read from the specs, so "done" is a fraction with named gaps rather than an adjective, and an unknown criterion is an error. | `--criteria`; §Major Components |
 | FR-010–FR-014 | Each run becomes one immutable record with its command, exit code and fingerprint; duplicates fail and reading sorts by time. | `bin/speckit-ledger`; `.specify/ledger.jsonl` |
 | FR-015–FR-018 | A change-scoped run names the subset it ran and never claims the whole suite, and a flaky test is labelled with both outcomes. | `--all`; `evals/` |
@@ -487,6 +488,7 @@ own regardless of whether the skill loaded.
 | FR-041 | `security changed` uses the same pinned rules | Diff-aware stage |
 | FR-042 | Report prints the environment-only rule as the control and never lets a green scan imply it | The rule a scanner cannot check |
 | FR-043 | Line states from `executed_lines` / `missing_lines` / `excluded_lines`; silence and an absent file are named unmeasured, and `summary.num_statements` is checked against the lists | Silence is not a measurement |
+| FR-044 | `declared_examined()` shared by the `make` and `command` adapters: last `examined=N` wins, distinct values → unknown, `0` → zero-examined | A declared count is the one written for this check; two answers are not one answer (`decisions/0011`) |
 
 ## Implementation Boundaries
 
@@ -511,6 +513,6 @@ own regardless of whether the skill loaded.
 
 ## What Changed / What Remains Open
 
-- **Changed from the spec:** — FR-037's "schema-driven instance" lands as one adapter (`schemathesis`) plus a manifest field rather than a general property generator; FR-005's control and FR-030's falsification are the same mechanism (a command that must fail), so they share one manifest field.
+- **Changed from the spec:** — FR-037's "schema-driven instance" lands as one adapter (`schemathesis`) plus a manifest field rather than a general property generator; FR-005's control and FR-030's falsification are the same mechanism (a command that must fail), so they share one manifest field; FR-044 (added 2026-10-26) reverses 0010's workaround: the kit's own check declares `runner: make` again.
 - **Still open:** — whether the extreme-mutation mode earns its documentation; which coverage adapters follow Python; whether `speckit-resume`'s exit 3 needs a dedicated `--criteria` flag or should always print the tally (implementation feedback decides, both satisfy FR-007).
 - **Needs approval:** — this plan, before `tasks.md` is generated.

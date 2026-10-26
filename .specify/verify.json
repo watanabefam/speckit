@@ -4,7 +4,7 @@
     {
       "id": "test",
       "kind": "test",
-      "runner": "command",
+      "runner": "make",
       "command": "make test",
       "paths": [
         "**"

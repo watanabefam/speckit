@@ -79,6 +79,7 @@ Task 73: complete (the CI matrix already runs the gate on macOS bash 3.2 and Lin
 Task 74: complete (quickstart scenarios: the engine, ledger, mutation and pass^k ones run in the harness; the scanner scenarios need absent tools, so they are NOT-RUN rather than claimed. The research companion's claims were checked in docs/research/spec-vs-research-check-2026-10-22.md ([SC-007]))
 Task 75: complete (`SELF-GATE: PASS  examined=N assertion(s)`; N > 0, and a run that asserts nothing fails (FR-001))
 Task 76: complete (this file; `bin/speckit-resume specs/005-verification-integrity` prints COMPLETE only when every task has a line)
+Task 78: complete (amendment FR-044, `decisions/0011`: `harness.py --case make-declared` asserts that a declared count is read, that a runner summary is still used when nothing is declared, that a declaration is preferred when both appear, that `examined=0` is never green, and that two declarations are reported as unknown rather than reconciled; the case fails against the pre-amendment adapter (checked by running it on `git show HEAD:bin/speckit-verify`); `runner: make` on `make test` reports `examined=218` and PASS ([SC-001]))
 Task 77: complete (amendment FR-043: `harness.py --case coverage-silence` and `--property P-013` pass; both fail against an engine that classifies silence as unexercised, checked by reverting that one branch ([SC-008]))
 
 ## Not claimed

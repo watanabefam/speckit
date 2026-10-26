@@ -86,6 +86,22 @@ Rules the output obeys:
 The JSON object is the ledger record (`contracts/ledger-record.schema.json`) plus `report: {selection, changed,
 unmatched, fallback, changed_lines, findings}`. No field is human-prose-only; a CI job parses the record, not the banner.
 
+## Adapter counts
+
+A check's `examined` figure comes from the command's own output, in this order:
+
+1. the count the command declares for itself — the last `examined=N` line in the output;
+2. otherwise the runner's summary (`3 passed`, `test result: ok. N passed; M failed`);
+3. otherwise unknown, which yields `INCOMPLETE`, never `PASS`.
+
+A declaration is preferred over a summary because they count different units — assertions the suite
+evaluated versus tests the runner ran — and the declaration is the one written for this check. The last
+declaration wins because a wrapper prints its summary at the end, so text a test echoes earlier cannot
+override it. Two *different* declarations in one output are two answers to one question: the check reports
+`examined unknown` and names both. A declared `examined=0` is the zero-examined state whatever the exit
+code was. A command that prints a count it did not earn cannot be detected by a parser; the negative
+control is what makes the number mean something (`decisions/0010`, `decisions/0011`).
+
 ## Invariants
 
 1. `PASS` ⇒ `examined > 0 ∧ skips = 0 ∧ vacuous = 0 ∧ unmatched = 0 ∧ record durable`.
@@ -93,7 +109,10 @@ unmatched, fallback, changed_lines, findings}`. No field is human-prose-only; a 
 3. A check whose `control` passes contributes `status: vacuous` and forces `INCOMPLETE`.
 4. `--no-ledger` never yields `PASS`.
 5. Exit `1` dominates `3`: a real failure beside a skip is `FAIL`, not `INCOMPLETE`.
-6. Selection is by declared globs, and a change to a shared or configuration file
+6. The ledger is a tracked file: appended only, one record per line, read in (`at`, `id`) order. A merge
+   keeps both sides' lines and never deletes one; `speckit-ledger verify` is what proves the result is
+   still well-formed (`decisions/0011`).
+7. Selection is by declared globs, and a change to a shared or configuration file
    (`selection.select_all_on`, defaulting to `conftest.py`, `pyproject.toml`, lockfiles and the
    manifest itself) selects every check and states `fallback:` — a glob cannot bound the effect of
    a file every test reads. Selection omits no test it cannot attribute, or it says so.

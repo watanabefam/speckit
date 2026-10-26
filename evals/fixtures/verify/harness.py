@@ -186,6 +186,46 @@ def case_clean_control(root):
     expect("examined=3" in out, "the examined count was not printed")
 
 
+def case_make_declared(root):
+    # A make target is a wrapper: it may print the invoked runner's summary, its own count, or
+    # both. The declared count is in the check's own unit, so it wins; two declarations are not
+    # resolved by picking one; a declared zero examined nothing and is never green.
+    manifest(root, [check("wrapped", runner="make",
+                          command='python3 -c "print(\'SELF-GATE: PASS examined=7 assertion(s)\') "')])
+    spec(root, ["SC-001"], evidenced=["SC-001"])
+    code, out, _ = verify(root, ["--all", "--spec", "specs/demo/spec.md"])
+    expect(code == 0, "a wrapper that declared its count must pass, got %d\n%s" % (code, out))
+    expect("examined 7" in out, "the make adapter ignored the declared count\n%s" % out)
+
+    # The runner summary is still read when the wrapper declares nothing.
+    manifest(root, [check("wrapped", runner="make",
+                          command='python3 -c "print(\'3 passed\')"')])
+    code, out, _ = verify(root, ["--all", "--spec", "specs/demo/spec.md"])
+    expect(code == 0 and "examined 3" in out,
+           "a make summary count stopped being read, got %d\n%s" % (code, out))
+
+    # Declaration over summary: they count different things, so the one written for this check wins.
+    manifest(root, [check("wrapped", runner="make",
+                          command='python3 -c "print(\'2 passed\'); print(\'TOTAL examined=5\')"')])
+    code, out, _ = verify(root, ["--all", "--spec", "specs/demo/spec.md"])
+    expect("examined 5" in out, "the scraped summary overrode the declared count\n%s" % out)
+
+    # A declared zero examined nothing, so it cannot be green.
+    manifest(root, [check("wrapped", runner="make",
+                          command='python3 -c "print(\'SELF-GATE: PASS examined=0 assertion(s)\') "')])
+    code, out, _ = verify(root, ["--all", "--spec", "specs/demo/spec.md"])
+    expect(code == 3, "a declared zero must not be green, got %d\n%s" % (code, out))
+    expect("examined nothing" in out, "the declared zero was not named\n%s" % out)
+
+    # Two answers to one question are not resolved by choosing one.
+    manifest(root, [check("wrapped", runner="make",
+                          command='python3 -c "print(\'examined=4\'); print(\'examined=9\')"')])
+    code, out, _ = verify(root, ["--all", "--spec", "specs/demo/spec.md"])
+    expect(code == 3, "a disagreeing declaration must not be green, got %d\n%s" % (code, out))
+    expect("disagree" in out and "examined=4" in out and "examined=9" in out,
+           "the disagreement was not reported\n%s" % out)
+
+
 def case_unmatched(root):
     write(os.path.join(root, "src", "a.py"), "x = 1\n")
     manifest(root, [check("unit", command='python3 -c "print(\'1 passed\')"')])
@@ -535,7 +575,8 @@ CASES = [
     ("shared-file", case_shared_file),
     ("zero-tests", case_zero_tests), ("self-oracle", case_self_oracle),
     ("control-passes", case_control_passes), ("no-control", case_no_control),
-    ("clean-control", case_clean_control), ("unmatched", case_unmatched),
+    ("clean-control", case_clean_control), ("make-declared", case_make_declared),
+    ("unmatched", case_unmatched),
     ("flaky", case_flaky), ("merge", case_merge), ("coverage", case_coverage),
     ("coverage-silence", case_coverage_silence),
     ("mutation", case_mutation), ("extreme", case_extreme), ("unmeasured", case_unmeasured),

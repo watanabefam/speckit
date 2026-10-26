@@ -364,13 +364,33 @@ def select(manifest, opts, mode):
 # ---------------------------------------------------------------- adapters
 
 COUNT_RE = re.compile(r"(\d+) (passed|failed|error|errors|skipped|xfailed|xpassed)\b")
+DECLARED_RE = re.compile(r"examined=(\d+)")
 
 
 def counted(out):
+    """Scrape a runner's own summary line ("3 passed"). Weakest input: test text can contain it."""
     counts = {}
     for num, word in COUNT_RE.findall(out):
         counts[word] = counts.get(word, 0) + int(num)
     return counts
+
+
+def declared_examined(out):
+    """The count a command declared for itself (`examined=N`), in its own unit.
+
+    Returns (value, None), (None, None) when there is no declaration, or (None, note) when the
+    output states more than one distinct value. The last declaration wins: a wrapper prints its
+    summary at the end, so text a test echoes earlier cannot override the real line. Two distinct
+    declarations are two answers to one question, and the engine never chooses between numbers.
+    """
+    values = [int(v) for v in DECLARED_RE.findall(out)]
+    if not values:
+        return None, None
+    distinct = sorted(set(values))
+    if len(distinct) > 1:
+        return None, "two declared counts disagree (%s): examined unknown" % " and ".join(
+            "examined=%d" % v for v in distinct)
+    return values[-1], None
 
 
 def adapt(runner, code, out):
@@ -447,16 +467,29 @@ def adapt(runner, code, out):
         return verdict_from(code, examined, None)
 
     if runner == "make":
+        # A make target is a wrapper, so its body may print the runner's summary and/or its own
+        # count. A declaration is in the check's unit (assertions, criteria, files); a scraped
+        # summary is the test count of whatever the wrapper happened to invoke. Prefer the
+        # declaration, because it is the one the check's author wrote for this check.
         if "Nothing to be done" in out and code == 0:
             return "no-items", 0, "make: nothing to be done"
-        examined = counts.get("passed", 0) + counts.get("failed", 0)
+        declared, conflict = declared_examined(out)
+        if conflict:
+            return ("pass" if code == 0 else "fail"), None, "make: " + conflict
+        if declared == 0:
+            return "no-items", 0, "make: the command declared examined=0, so it examined nothing"
+        examined = declared if declared is not None else counts.get("passed", 0) + counts.get("failed", 0)
         if code == 0 and examined == 0:
             return "pass", None, "make: succeeded, count not parsed (examined unknown)"
         return verdict_from(code, examined, None)
 
-    match = re.search(r"examined=(\d+)", out)
-    if match:
-        return verdict_from(code, int(match.group(1)), None)
+    declared, conflict = declared_examined(out)
+    if conflict:
+        return ("pass" if code == 0 else "fail"), None, "command: " + conflict
+    if declared is not None:
+        if declared == 0:
+            return "no-items", 0, "command: declared examined=0, so it examined nothing"
+        return verdict_from(code, declared, None)
     if counts:
         return verdict_from(code, counts.get("passed", 0) + counts.get("failed", 0), None)
     if code == 0:

@@ -12,7 +12,7 @@
 
 **Workflow:** full spec-driven · **Companion:** `docs/research/verification-tooling-2026-10.md` (informative; five validation rounds, §10 and §11 authoritative, §12 the corrections made after the independent check)
 **Normative sections:** User Scenarios & Testing, Requirements, Success Criteria.
-**Revised**: 2026-10-22 after `docs/research/spec-vs-research-check-2026-10-22.md` (findings C-01, H-01…H-03, M-01…M-08, L-01…L-05). **Amended 2026-10-23** (owner-approved): FR-034 qualified and FR-043 added — a coverage report's silence is unmeasured, not uncovered (`decisions/0006-coverage-silence-is-not-a-result.md`).
+**Revised**: 2026-10-22 after `docs/research/spec-vs-research-check-2026-10-22.md` (findings C-01, H-01…H-03, M-01…M-08, L-01…L-05). **Amended 2026-10-23** (owner-approved): FR-034 qualified and FR-043 added — a coverage report's silence is unmeasured, not uncovered (`decisions/0006-coverage-silence-is-not-a-result.md`). **Amended 2026-10-26** (owner-approved): FR-044 added — a count a command declares for itself is preferred over one scraped from a runner's summary, two declarations are never resolved by choosing, and a declared zero is the zero-examined state (`decisions/0011-declared-counts-and-a-committed-ledger.md`).
 **Relationship to 004:** `004-reliability-hardening` repaired the *kit's own* gate (its recursion, its skips, its ledger trust). This feature addresses a different subject: whether a verification report means anything — first at the kit's own `./scripts/verify`, then at any **downstream project's**. Where the two overlap, 004's three-state verdict (`scripts/self-gate.sh:1477-1490`) is the precedent to copy, not to change.
 
 ## In Plain Terms
@@ -51,6 +51,7 @@ against) — a check whose expected value comes from the code under test has che
 | FR-038–FR-039 | A killed mutant records whether a test's assertion killed it or the run crashed, and the faster mode is labelled as less precise. | FR-038–FR-039 |
 | FR-040–FR-042 | A scheduled broad scan exists, the change-scoped scan uses the same pinned rules, and the real control for hand-written credentials is named. | FR-040–FR-042 |
 | FR-043 | A changed line the report never mentions is unmeasured — counted as neither reached nor unexercised. | FR-043 |
+| FR-044 | A wrapper that says "I looked at 218 things" is believed over a number scraped from a test runner's own summary; two different numbers mean "don't know" rather than a guess, and "I looked at 0 things" is never a pass. | FR-044 |
 | SC-001 | None of four vacuity fixtures produces a green verdict, and the clean control still passes. | SC-001 |
 | SC-002 | Every completion report carries a count with a nonzero total, or refuses. | SC-002 |
 | SC-003 | A hundred simulated parallel merges lose, duplicate and reorder nothing. | SC-003 |
@@ -260,6 +261,7 @@ An owner learns that a check passing once is not the same as a check that passes
 - **FR-004**: Every check MUST declare whether its expected value is fixed outside the code under test; a check that declares no source, or declares a source inside the code under test, MUST be excluded from evidence and the exclusion reported.
 - **FR-005**: Each mandatory check MUST declare a negative control — a known-bad input it is expected to reject — and the control's rejection MUST be reported. Precedent: the gate's own negative control at `scripts/self-gate.sh:707-727`.
 - **FR-006**: A test-runner exit code indicating "no tests collected" MUST map to the zero-examined state, not to success.
+- **FR-044**: An adapter MUST read the count a command declares for itself (`examined=N`) in preference to one scraped from a runner's summary, because the two count different units; MUST report `examined unknown` when the output declares two different counts, rather than choosing one; and MUST map a declared `examined=0` to the zero-examined state whatever the exit code was.
 
 **Criteria tally (US2)**
 

@@ -128,3 +128,10 @@ feature's specification, not in a control change. Recorded as parked work below.
   feature-sized change, not a fast-lane one.
 - A second mutator (for example: neuter `check-plain-terms.py` in both copies and require the fixture
   assertions to notice) would cover the "the checker stopped detecting" class, at double the cost.
+
+## Followed up
+
+- **2026-10-26** — the parked `make` adapter item landed as
+  `decisions/0011-declared-counts-and-a-committed-ledger.md` (FR-044), so `.specify/verify.json` declares
+  `runner: "make"` again. Point 7 above is kept as the record of why the workaround existed, not as a
+  description of the manifest today.

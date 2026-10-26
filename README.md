@@ -370,6 +370,17 @@ A check is evidence only when three things are true, and the engine refuses to c
 | `bin/speckit-security` | `observe` (records a baseline), `changed` (reports), `block` (confirmed-live only) |
 | `evals/run-passk.py` | pass@1, empirical pass^k and the constant-p bound, side by side |
 
+**Where the number comes from.** A command that prints `examined=N` for itself is believed over a runner's
+summary (`3 passed`), because the two count different things — assertions evaluated versus tests run — and
+the declaration is the one written for this check. Two *different* declarations are reported as unknown
+rather than reconciled, and `examined=0` is the zero-examined state whatever the exit code was. A count is
+still only as good as the check behind it, which is what the declared control is for.
+
+**The ledger is a tracked file.** `.specify/ledger.jsonl` holds one record per line, appended only and read
+in timestamp order. Merges keep both sides' lines; `merge=union` is deliberately not used, because it absorbs
+a deleted line without a conflict and erasure is the one edit an audit trail must not lose silently
+(`decisions/0011`).
+
 **Changed vs full.** With no flags the engine selects the checks a change can plausibly affect and
 prints the selection. `--all` is the full-suite mode for a scheduled job. A changed file matched by
 no check makes the run `INCOMPLETE` — the report never widens a scoped run into "all tests pass".
