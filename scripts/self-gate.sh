@@ -693,6 +693,116 @@ PY
   fi
 fi
 
+hdr "1i2. ledger evidence — the verifier writes the line, not the worker"
+# A `Task N: complete` line is a claim, even inside a durable file. bin/speckit-verify
+# runs the task's OWN named verification before appending anything, records the command
+# and exit code, and hash-chains the entry so a hand-written line is detectable.
+#
+# Every case below is a defect that was real while this was being built:
+#   - the numbered task style (`3. `[x]` …`) was not parsed at all, so a spec using it
+#     reported every task as outstanding;
+#   - argv "0" is truthy in Python, which silently made every resume strict;
+#   - a hand-forged `complete · verified` line passed strict resume until the chain
+#     was recomputed;
+#   - `withdrawn` stranded a resume forever on timeline-game spec 002.
+SV="$ROOT/bin/speckit-verify"
+if [ ! -x "$SV" ]; then
+  bad "bin/speckit-verify missing — the ledger cannot tell a claim from evidence"
+else
+  ok "bin/speckit-verify present and executable"
+  python3 - "$SV" "$RS" <<'PY' || fail=1
+import os, re, subprocess, sys, tempfile
+
+sv, rs = sys.argv[1], sys.argv[2]
+bad = 0
+
+
+def say(ok, msg):
+    global bad
+    print(("  ok    " if ok else "  FAIL  ") + msg)
+    if not ok:
+        bad += 1
+
+
+def make(tasks, script="exit 0"):
+    d = tempfile.mkdtemp(prefix="ledger-")
+    os.makedirs(os.path.join(d, "scripts"))
+    open(os.path.join(d, "tasks.md"), "w").write(tasks)
+    open(os.path.join(d, "scripts", "v.sh"), "w").write("#!/bin/sh\n%s\n" % script)
+    subprocess.run(["git", "init", "-q"], cwd=d)
+    return d
+
+
+def run(cmd, cwd):
+    return subprocess.run(cmd, cwd=cwd, capture_output=True, text=True)
+
+
+def ledger(d):
+    p = os.path.join(d, "progress.md")
+    return open(p, encoding="utf-8").read() if os.path.exists(p) else ""
+
+
+NUM = "1. `[ ]` a. Verified by `sh scripts/v.sh`.\n2. `[ ]` b.\n"
+KIT = "- [ ] T001 a. Verified by `sh scripts/v.sh`\n- [ ] T002 b\n"
+
+# 1. both task styles parse
+d = make(NUM)
+r = run([sv, d, "--list"], d)
+say("T1" in r.stdout and "T2" in r.stdout, "numbered tasks.md style parses")
+d = make(KIT)
+r = run([sv, d, "--list"], d)
+say("T1" in r.stdout and "T2" in r.stdout, "kit tasks.md style parses")
+
+# 2. no runnable verifier => could-not-run, nothing recorded
+d = make(NUM)
+r = run([sv, d, "2"], d)
+say(r.returncode == 3, "a task with no runnable verifier exits 3 (could-not-run)")
+say("complete" not in ledger(d), "could-not-run records nothing (a tick is not evidence)")
+
+# 3. a passing verifier records a verified, hash-chained entry
+d = make(NUM)
+r = run([sv, d, "1"], d)
+led = ledger(d)
+say(r.returncode == 0, "passing verifier exits 0")
+say("complete · verified" in led, "ledger records complete · verified")
+say(re.search(r"prev 0{12} · sig [0-9a-f]{12}", led) is not None, "first entry is chained from zero")
+say("sh scripts/v.sh" in led, "the ledger records WHICH command proved it")
+
+# 4. a failing verifier records a failure, not a completion
+d = make(NUM, script="exit 7")
+r = run([sv, d, "1"], d)
+led = ledger(d)
+say(r.returncode == 1, "failing verifier exits 1")
+say("failed · verified" in led and "exit 7" in led, "the failure and its exit code are recorded")
+say("Task 1: complete" not in led, "a failure never writes a completion")
+
+# 5. audit passes a real chain, and catches a forgery
+d = make(NUM)
+run([sv, d, "1"], d)
+say(run([sv, d, "--audit"], d).returncode == 0, "audit accepts a verifier-written chain")
+with open(os.path.join(d, "progress.md"), "a", encoding="utf-8") as f:
+    f.write("Task 2: complete · verified · `true` · exit 0 · at 1970-01-01T00:00:00Z · "
+            "head deadbee · dirty 0 · prev 000000000000 · sig 0123456789ab\n")
+say(run([sv, d, "--audit"], d).returncode == 4, "audit rejects a hand-forged entry (exit 4)")
+
+# 6. strict resume does not count that forgery; non-strict does, and warns
+strict = run([rs, d, "--strict"], d)
+loose = run([rs, d], d)
+say("RESUME T2" in strict.stdout, "--strict ignores a forged completion")
+say("COMPLETE" in loose.stdout, "without --strict a claim still counts (backward compatible)")
+say("not hash-chained" in loose.stderr, "without --strict the claim is reported")
+
+# 7. withdrawn is resolved, not outstanding
+d = make("- [ ] T001 a\n- [ ] T002 b\n- [ ] T003 c\n")
+with open(os.path.join(d, "progress.md"), "w", encoding="utf-8") as f:
+    f.write("Task 1: complete (did it)\nTask 2: withdrawn (not needed)\n")
+r = run([rs, d], d)
+say("RESUME T003" in r.stdout, "a withdrawn task does not strand the resume")
+
+sys.exit(bad)
+PY
+fi
+
 hdr "1j. scenario evals (T033) — the judgement scenarios, against a scripted agent"
 # Eight of the twelve quickstart scenarios are deterministic and asserted above. The three
 # judgement ones need a real agent, so their harness runs here against a scripted fake —

@@ -1,0 +1,354 @@
+#!/usr/bin/env bash
+# speckit-verify — record task completion as EVIDENCE, not as a claim.
+#
+# WHY THIS EXISTS
+#
+# `speckit-resume` reads progress.md and treats a `Task <n>: complete` line as done.
+# But that line is typed by the agent that did the work, so the ledger records a CLAIM
+# in a durable place. Durable is not the same as true.
+#
+# The fix is "ratification by re-execution": the verifier runs the task's own named
+# verification and only then appends the line, with the command, the exit code, the
+# commit it ran against, and a hash-chain link to the previous entry. An agent can
+# still write a line by hand — but it will not hash-chain, and `--audit` says so.
+#
+# Measured evidence for the shape (see docs/LEDGER-EVIDENCE.md):
+#   - Chauhan, "Ratification by Re-execution" (2026) — a verifier that reads claims
+#     produces an opinion; a compliance record needs primary execution evidence.
+#   - "Agreement by Construction" (2026) — once a deterministic rule decides a case,
+#     a judge's verdict on that case is not independent evidence of anything.
+#   - "When the Judge is Wrong" (2026) — judges need ground truth built outside the
+#     class of system being judged.
+#
+# USAGE
+#
+#   speckit-verify <spec-dir> --list                 # tasks, state, runnable verifier?
+#   speckit-verify <spec-dir> <task-id>              # run the named verifier, record it
+#   speckit-verify <spec-dir> <task-id> --dry-run    # show the command, record nothing
+#   speckit-verify <spec-dir> <task-id> --attest "who: what was checked"
+#   speckit-verify <spec-dir> --audit                # verify the hash chain + list claims
+#
+# Task ids: `T3` and `3` are the same task. Both tasks.md styles are read —
+#   `- [ ] T003 ...`   (kit canonical)
+#   `3. [x] ...`       (hand-written specs)
+#
+# A task's verifier is the command in the task text after `Verified by `cmd``,
+# `Verified: `cmd`` or `verify: `cmd``. If the backticks hold prose ("unit tests")
+# rather than a command, the task is recorded as COULD-NOT-RUN, never as complete.
+#
+# EXIT CODES — tri-state, because "did not run" must never look like "passed":
+#   0  verifier ran and passed; evidence appended
+#   1  verifier ran and failed; failure appended
+#   2  usage or setup error (no tasks.md, unknown task)
+#   3  could not run — the task names no runnable verifier; nothing appended
+#   4  ledger hash chain is broken; refusing to append (run --audit)
+
+set -euo pipefail
+
+usage() { sed -n '3,45p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; }
+
+SPEC=""
+TASK=""
+MODE="run"
+ATTEST=""
+DRY=0
+
+for arg in "$@"; do
+  case "$arg" in
+    --list)    MODE="list" ;;
+    --audit)   MODE="audit" ;;
+    --dry-run) DRY=1 ;;
+    --attest)  MODE="attest" ;;
+    -h|--help) usage; exit 0 ;;
+    --*)       echo "unknown option: $arg" >&2; exit 2 ;;
+    *)
+      if [ -z "$SPEC" ]; then SPEC="$arg"
+      elif [ -z "$TASK" ]; then TASK="$arg"
+      else ATTEST="$arg"
+      fi ;;
+  esac
+done
+
+[ -n "$SPEC" ] || { usage; exit 2; }
+[ -d "$SPEC" ] || { echo "no such spec dir: $SPEC" >&2; exit 2; }
+
+command -v python3 >/dev/null 2>&1 || { echo "speckit-verify needs python3" >&2; exit 2; }
+
+exec python3 - "$SPEC" "$TASK" "$MODE" "$ATTEST" "$DRY" <<'PY'
+import hashlib
+import os
+import re
+import subprocess
+import sys
+import time
+
+spec_dir, task_arg, mode, attest_text, dry = sys.argv[1:6]
+dry = dry == "1"
+
+tasks_path = os.path.join(spec_dir, "tasks.md")
+ledger_path = os.path.join(spec_dir, "progress.md")
+plan_path = os.path.join(spec_dir, "plan.md")
+
+
+def _repo_root(path):
+    """Tasks name verifiers relative to the REPO, not the spec folder
+    (`scripts/test/x.test.mjs` in specs/006-.../tasks.md). Running them from the spec
+    dir would report COULD-NOT-RUN for every real verifier."""
+    try:
+        out = subprocess.run(
+            ["git", "rev-parse", "--show-toplevel"],
+            cwd=path, capture_output=True, text=True,
+        ).stdout.strip()
+        if out:
+            return out
+    except Exception:
+        pass
+    return os.path.abspath(path)
+
+
+repo_root = _repo_root(spec_dir)
+
+if not os.path.exists(tasks_path):
+    print("no tasks.md in %s" % spec_dir, file=sys.stderr)
+    sys.exit(2)
+
+# ---------------------------------------------------------------- task parsing
+# The text of a task is its first line plus any indented continuation lines, so a
+# verifier named on the wrapped line is still found. That matters: the real specs
+# wrap at 100 columns, and a parser that only reads the first line silently loses
+# half the verifiers.
+TASK_START = re.compile(
+    r"^\s*(?:[-*]\s+)?`?\[[ xX]\]`?\s*T?(\d+)\b"   # - [ ] T003   /  - `[x]` T3
+    r"|^\s*(\d+)\.\s+`?\[[ xX]\]`?"                # 3. [x] ...  /  3. `[x]` ...
+)
+
+tasks = []
+current = None
+for line in open(tasks_path, encoding="utf-8"):
+    m = TASK_START.match(line)
+    if m:
+        num = int(m.group(1) or m.group(2))
+        current = {"num": num, "text": line.rstrip("\n")}
+        tasks.append(current)
+    elif current is not None and line.startswith((" ", "\t")) and line.strip():
+        current["text"] += "\n" + line.rstrip("\n")
+    elif line.strip() == "":
+        continue
+    else:
+        current = None
+
+if not tasks:
+    print(
+        "no tasks parsed from %s — expected `- [ ] T003 ...` or `3. [ ] ...`"
+        % tasks_path,
+        file=sys.stderr,
+    )
+    sys.exit(2)
+
+CMD_RE = re.compile(r"(?:Verified by|Verified:|verify:)\s*`([^`]+)`", re.IGNORECASE)
+# A command, not a sentence: it has to look like something a shell can run.
+RUNNABLE = re.compile(r"[\w./-]+\s|^(npm|node|python3?|bash|sh|make|pytest|go|cargo|deno|bun)\b|/")
+
+
+def verifier_of(task):
+    for m in CMD_RE.finditer(task["text"]):
+        cand = m.group(1).strip()
+        if not RUNNABLE.search(cand):
+            continue
+        # A spec that names the test FILE rather than the command is naming a real
+        # verifier — `scripts/test/x.test.mjs` — so run it with node instead of
+        # pretending the path is executable. Only for an existing .mjs/.js/.cjs file.
+        if re.match(r"^[\w./-]+\.(mjs|js|cjs)$", cand) and os.path.exists(
+            os.path.join(repo_root, cand)
+        ):
+            return "node " + cand
+        return cand
+    return None
+
+
+def find(num):
+    for t in tasks:
+        if t["num"] == num:
+            return t
+    return None
+
+
+# ---------------------------------------------------------------- ledger I/O
+HEADER_RULE = """\
+# Resume rule: a task is DONE iff the ledger carries evidence for it. `complete · verified`
+#   was produced by bin/speckit-verify running the task's named verifier (hash-chained).
+#   `complete · attested` records a human check with no automated oracle. A bare
+#   `Task <n>: complete` is a legacy claim: it still counts, and it is reported.
+#   `withdrawn` is resolved, not outstanding. If this ledger names another plan,
+#   archive it and start fresh — never merge two plans' ledgers.
+"""
+
+ENTRY_RE = re.compile(r"^Task (\d+): (complete|failed|withdrawn)\b(.*)$")
+SIG_RE = re.compile(r"\bsig ([0-9a-f]{12})\s*$")
+PREV_RE = re.compile(r"\bprev ([0-9a-f]{12})\b")
+
+
+def ledger_entries():
+    if not os.path.exists(ledger_path):
+        return []
+    out = []
+    for line in open(ledger_path, encoding="utf-8"):
+        line = line.rstrip("\n")
+        m = ENTRY_RE.match(line)
+        if m:
+            out.append((line, m))
+    return out
+
+
+def bind_prev(entries):
+    """Each entry's `prev` must be the previous entry's `sig`. That is the chain."""
+    problems = []
+    prev_sig = "0" * 12
+    for line, m in entries:
+        prev = PREV_RE.search(line)
+        sig = SIG_RE.search(line)
+        if not prev or not sig:
+            problems.append("not hash-chained (hand-written?): %s" % line.strip()[:90])
+            continue
+        if prev.group(1) != prev_sig:
+            problems.append(
+                "chain break before %s: prev %s but previous sig %s"
+                % (line.strip()[:60], prev.group(1), prev_sig)
+            )
+        body = SIG_RE.sub("", line).rstrip(" ·")
+        expect = hashlib.sha256((prev_sig + "|" + body).encode("utf-8")).hexdigest()[:12]
+        if expect != sig.group(1):
+            problems.append(
+                "signature mismatch on %s: recomputed %s" % (line.strip()[:60], expect)
+            )
+        prev_sig = sig.group(1)
+    return problems
+
+
+def git_head():
+    try:
+        head = subprocess.run(
+            ["git", "rev-parse", "--short", "HEAD"],
+            cwd=repo_root, capture_output=True, text=True,
+        ).stdout.strip()
+        dirty = subprocess.run(
+            ["git", "status", "--porcelain"],
+            cwd=repo_root, capture_output=True, text=True,
+        ).stdout.strip().splitlines()
+        return head or "nogit", len(dirty)
+    except Exception:
+        return "nogit", 0
+
+
+def append(state, klass, detail, code):
+    entries = ledger_entries()
+    problems = bind_prev(entries)
+    if problems:
+        print("ledger chain is broken — refusing to append:", file=sys.stderr)
+        for p in problems:
+            print("  " + p, file=sys.stderr)
+        sys.exit(4)
+
+    prev_sig = SIG_RE.search(entries[-1][0]).group(1) if entries else "0" * 12
+    head, dirty = git_head()
+    stamp = time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+    body = "Task %d: %s · %s · %s · exit %s · at %s · head %s · dirty %d · prev %s" % (
+        task["num"], state, klass, detail, code, stamp, head, dirty, prev_sig
+    )
+    sig = hashlib.sha256((prev_sig + "|" + body).encode("utf-8")).hexdigest()[:12]
+
+    fresh = not os.path.exists(ledger_path)
+    if dry:
+        print("DRY RUN — would append:\n  " + body + " · sig " + sig)
+        return
+    with open(ledger_path, "a", encoding="utf-8") as f:
+        if fresh:
+            rel = os.path.relpath(os.path.normpath(plan_path))
+            f.write("# Progress — plan: %s\n%s\n" % (rel, HEADER_RULE))
+        f.write(body + " · sig " + sig + "\n")
+    print("recorded: " + state + " · " + klass + " — " + detail)
+
+
+# ---------------------------------------------------------------- modes
+if mode == "audit":
+    entries = ledger_entries()
+    if not entries:
+        print("no ledger entries yet")
+        sys.exit(0)
+    problems = bind_prev(entries)
+    claims = [l for l, m in entries if "·" not in l]
+    print("entries: %d" % len(entries))
+    for line, m in entries:
+        state = m.group(2)
+        klass = "verified" if "· verified ·" in line else ("attested" if "· attested ·" in line else "claim")
+        print("  Task %-3s %-9s %s" % (m.group(1), state, klass))
+    if claims:
+        print("\nlegacy claims with no evidence class: %d" % len(claims), file=sys.stderr)
+    if problems:
+        print("\nCHAIN BROKEN:", file=sys.stderr)
+        for p in problems:
+            print("  " + p, file=sys.stderr)
+        sys.exit(4)
+    print("\nchain intact")
+    sys.exit(0)
+
+if mode == "list":
+    entries = {int(m.group(1)): (m.group(2), l) for l, m in ledger_entries()}
+    for t in tasks:
+        cmd = verifier_of(t)
+        state = entries.get(t["num"], ("todo", ""))[0]
+        print(
+            "T%-3d %-9s %s"
+            % (t["num"], state, cmd if cmd else "— no runnable verifier")
+        )
+    sys.exit(0)
+
+if not task_arg:
+    print("give a task id, or --list / --audit", file=sys.stderr)
+    sys.exit(2)
+
+try:
+    num = int(re.sub(r"^[Tt]", "", task_arg))
+except ValueError:
+    print("not a task id: %s" % task_arg, file=sys.stderr)
+    sys.exit(2)
+
+task = find(num)
+if task is None:
+    print("no task %s in %s" % (task_arg, tasks_path), file=sys.stderr)
+    sys.exit(2)
+
+if mode == "attest":
+    if not attest_text:
+        print('--attest needs a reason: --attest "Tim: read the diff and the run log"', file=sys.stderr)
+        sys.exit(2)
+    append("complete", "attested", attest_text.strip(), "n/a")
+    sys.exit(0)
+
+cmd = verifier_of(task)
+if not cmd:
+    print(
+        "COULD-NOT-RUN: task %d names no runnable verifier.\n"
+        "  A checkbox is not evidence. Either name one in tasks.md (`Verified by `cmd``)\n"
+        "  or record a human check with --attest \"who: what you looked at\"." % num,
+        file=sys.stderr,
+    )
+    sys.exit(3)
+
+if dry:
+    print("would run: " + cmd)
+    sys.exit(0)
+
+print("running: " + cmd)
+started = time.time()
+proc = subprocess.run(cmd, shell=True, cwd=repo_root)
+elapsed = time.time() - started
+print("exit %d in %.1fs" % (proc.returncode, elapsed))
+
+detail = "`%s`" % cmd
+if proc.returncode == 0:
+    append("complete", "verified", detail, "0")
+    sys.exit(0)
+append("failed", "verified", detail, str(proc.returncode))
+sys.exit(1)
+PY

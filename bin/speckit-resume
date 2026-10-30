@@ -18,9 +18,18 @@
 # Exit:   0 normally, 2 if tasks.md is missing
 set -euo pipefail
 
-SPEC="${1:-}"
+SPEC=""
+STRICT=0
+for _a in "$@"; do
+  case "$_a" in
+    --strict) STRICT=1 ;;
+    -h|--help) sed -n '2,20p' "${BASH_SOURCE[0]}" | sed 's/^# \{0,1\}//'; exit 0 ;;
+    --*) echo "unknown option: $_a" >&2; exit 2 ;;
+    *) if [ -z "$SPEC" ]; then SPEC="$_a"; else echo "unexpected argument: $_a" >&2; exit 2; fi ;;
+  esac
+done
 if [ -z "$SPEC" ]; then
-  echo "usage: speckit-resume <spec-dir>" >&2
+  echo "usage: speckit-resume <spec-dir> [--strict]" >&2
   exit 2
 fi
 TASKS="$SPEC/tasks.md"
@@ -30,18 +39,30 @@ if [ ! -f "$TASKS" ]; then
   exit 2
 fi
 
-python3 - "$TASKS" "$LEDGER" "$SPEC" <<'PY'
-import os, re, sys
+python3 - "$TASKS" "$LEDGER" "$SPEC" "$STRICT" <<'PY'
+import hashlib, os, re, sys
 
 tasks_path, ledger_path, spec_dir = sys.argv[1], sys.argv[2], sys.argv[3]
+# argv is a string: "0" is truthy in Python, so this bit me in testing and would have
+# silently made every resume strict.
+strict = sys.argv[4] == "1"
 
 # Task order comes from tasks.md; ids are matched numerically so `T003` and `Task 3`
-# are the same task.
+# are the same task. Two task styles are read, because real specs use both:
+#   `- [ ] T003 ...`        (kit canonical)
+#   `3. [x] ...`            (hand-written, e.g. timeline-game specs/006)
+TASK_RE = re.compile(
+    r"^\s*(?:[-*]\s+)?`?\[[ xX]\]`?\s*T?(\d+)\b"
+    r"|^\s*(\d+)\.\s+`?\[[ xX]\]`?"
+)
 tasks = []
 for line in open(tasks_path, encoding="utf-8"):
-    m = re.match(r"\s*- \[[ xX]\] (T(\d+))\b", line)
+    m = TASK_RE.match(line)
     if m:
-        tasks.append((int(m.group(2)), m.group(1)))
+        raw = m.group(1) or m.group(2)
+        # Keep the padding the spec used: `T003` must resume as T003, not T3 — the
+        # kit's own gate asserts the id round-trips, and a caller greps it.
+        tasks.append((int(raw), "T" + raw))
 
 # Identity first: a ledger that names a DIFFERENT plan is not evidence about this one.
 # Backward compatible — a ledger with no header still resumes (older projects), but a
@@ -56,10 +77,19 @@ if os.path.exists(ledger_path):
             if m:
                 declared = m.group(1).strip()
                 expected = os.path.normpath(os.path.join(spec_dir, "plan.md"))
-                if os.path.isabs(declared):
-                    same = os.path.realpath(declared) == os.path.realpath(expected)
-                else:
-                    same = os.path.normpath(declared) == expected
+                # Compare RESOLVED paths, and try the declared path against both the
+                # current directory and the spec directory. Comparing strings made the
+                # check depend on where the caller stood: `bin/speckit-verify` writes
+                # `plan.md` when run inside the spec dir, and a string compare then
+                # refused that ledger as "another plan's evidence".
+                got = os.path.realpath(
+                    declared if os.path.isabs(declared)
+                    else os.path.join(os.getcwd(), declared)
+                )
+                want = os.path.realpath(expected)
+                same = got == want
+                if not same and not os.path.isabs(declared):
+                    same = os.path.realpath(os.path.join(spec_dir, declared)) == want
                 if not same:
                     print(
                         "ledger names %s, not %s — refusing to resume (wrong plan's evidence)"
@@ -69,24 +99,83 @@ if os.path.exists(ledger_path):
                     sys.exit(2)
                 break
 
-# Completion comes from the ledger, and only from a `complete` line. A `fix round n/m`
-# line is explicitly not completion.
+# Completion comes from the ledger. Three classes of line count, and they are NOT
+# equally strong — that distinction is the point of the whole ledger:
+#
+#   `complete · verified · <cmd> · exit 0 · … · sig …`   bin/speckit-verify ran it
+#   `complete · attested · <who: what>`                  a human checked, no oracle
+#   `complete (<reason>)`                                legacy claim, pre-verify
+#
+# `withdrawn` is resolved, not outstanding: a task that was withdrawn must not strand
+# a resume forever (that bug stranded timeline-game spec 002's T11).
+#
+# --strict counts only `verified`: the mode for unattended loops, where nobody is
+# going to read a human attestation before the next iteration.
 done = set()
 unbacked = []
+SIG_RE = re.compile(r"\bsig ([0-9a-f]{12})\s*$")
+PREV_RE = re.compile(r"\bprev ([0-9a-f]{12})\b")
+
+
+def chain_ok(line, prev_sig):
+    """A line that imitates the format but was typed by hand does not hash-chain.
+    Recompute it: this is what makes `--strict` mean 'a verifier produced this'."""
+    prev = PREV_RE.search(line)
+    sig = SIG_RE.search(line)
+    if not prev or not sig:
+        return False, prev_sig
+    if prev.group(1) != prev_sig:
+        return False, prev_sig
+    body = SIG_RE.sub("", line.rstrip("\n")).rstrip(" ·")
+    expect = hashlib.sha256((prev_sig + "|" + body).encode("utf-8")).hexdigest()[:12]
+    if expect != sig.group(1):
+        return False, prev_sig
+    return True, sig.group(1)   # chain forward from this line's own signature
+
+
+prev_sig = "0" * 12
+broken = []
 if os.path.exists(ledger_path):
     for line in open(ledger_path, encoding="utf-8"):
-        m = re.match(r"\s*Task (\d+): complete\b", line)
-        if m:
-            done.add(int(m.group(1)))
-            # "complete" alone is a claim. Evidence is the parenthesised reason. Warn, do
-            # not fail: older ledgers predate the convention, and stranding a resume would
-            # be a worse defect than the claim it is flagging.
-            if not re.search(r"complete\s*\(\s*\S", line):
-                unbacked.append(int(m.group(1)))
+        m = re.match(r"\s*Task (\d+): (complete|withdrawn)\b", line)
+        if not m:
+            continue
+        num = int(m.group(1))
+        ok, prev_sig = chain_ok(line, prev_sig)
+        if not ok:
+            broken.append(num)
+        if m.group(2) == "withdrawn":
+            done.add(num)
+            continue
+        is_verified = "· verified ·" in line
+        is_attested = "· attested ·" in line
+        if strict:
+            # strict means "a verifier produced this AND the chain backs it"
+            if is_verified and ok:
+                done.add(num)
+            else:
+                unbacked.append(num)
+        elif is_verified or is_attested:
+            done.add(num)
+        elif re.search(r"complete\s*\(\s*\S", line):
+            done.add(num)          # legacy but carries a stated reason
+        else:
+            done.add(num)          # bare claim: still counts, but it is named below
+            unbacked.append(num)
+if broken:
+    print(
+        "warning: ledger is not hash-chained for Task %s — hand-written or edited. "
+        "Run bin/speckit-verify --audit." % ", ".join(str(n) for n in broken),
+        file=sys.stderr,
+    )
 if unbacked:
     print(
-        "note: Task %s recorded complete with no evidence in parentheses — completion claims are not evidence"
-        % ", ".join(str(n) for n in unbacked),
+        "note: Task %s counts as done on a claim, not on evidence%s — completion "
+        "claims are not evidence. Run bin/speckit-verify <spec> <task> to record one."
+        % (
+            ", ".join(str(n) for n in unbacked),
+            " (strict: these do NOT count)" if strict else "",
+        ),
         file=sys.stderr,
     )
 

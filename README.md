@@ -22,6 +22,7 @@ using Spec Kit's own extension points rather than forking it.
 | `commands/speckit.quick.md` | Installer-copied command | The fast lane for small work — a preset cannot create a command, so the installer copies it |
 | `bin/speckit-init` | Installer | One command to set a project up |
 | `bin/speckit-resume` | Kit tool | Computes the resume point from the ledger, so the resume rule is asserted, not interpreted |
+| `bin/speckit-verify` | Kit tool | Runs a task's own named verification and appends a **hash-chained** evidence line, so the ledger records proof instead of a claim — [docs/LEDGER-EVIDENCE.md](docs/LEDGER-EVIDENCE.md) |
 | `evals/` | Skill evaluations | Behaviour evals + **trigger-accuracy evals** (the failure mode that's silent) |
 | `scripts/self-gate.sh` + `.github/workflows/` | CI | The kit gates itself on every push, on Linux **and** macOS bash 3.2 |
 
@@ -286,6 +287,7 @@ permissions/opencode-permission.jsonc  the mechanical boundary, merged into the 
 bin/speckit-init                  installer (idempotent; uses `preset update`)
 bin/speckit-uninit                reverse it (preserves your own content)
 bin/speckit-resume                compute the resume point from the ledger (the rule, made mechanical)
+bin/speckit-verify                run a task's named verifier and append hash-chained evidence (the claim, made checkable)
 preset/                           spec-kit preset (append ×4, prepend ×5)
 skill/spec-driven-development/    agent skill + references
 global/working-agreements.md      global routing rules

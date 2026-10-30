@@ -5,6 +5,39 @@ versioning follows [Semantic Versioning](https://semver.org/).
 
 The preset version lives in `preset/preset.yml` and is what `specify preset info` reports.
 
+## [1.15.0] — 2026-10-30
+
+### Added — completion is now recorded by the verifier, not by the worker
+
+`progress.md` said "completion claims are not evidence" and then accepted a `Task <n>: complete`
+line the agent typed itself. The rule was true and unenforced.
+
+- **`bin/speckit-verify`** runs the task's own named verification (`Verified by `cmd`` in
+  `tasks.md`), then appends `complete · verified · <cmd> · exit 0 · at <time> · head <sha> ·
+  dirty <n>` — or `failed · verified` with the exit code. It never writes a completion it did not
+  witness. `--attest "who: what"` records a human check as a *different* class, and
+  `--audit` recomputes the chain.
+- **Entries are hash-chained.** Each carries `prev <sig>` and `sig`, so a hand-written line is
+  detectable; `--audit` exits 4 on a break. Tamper-evident, not tamper-proof — a determined forger
+  can rewrite the chain — but the common failure is an agent adding a line, and that is caught.
+- **`speckit-resume --strict`** counts only `complete · verified`, and recomputes the chain, so
+  imitating the format is not enough. Default behaviour is unchanged for existing ledgers: a claim
+  still counts, and it is reported on stderr.
+
+### Fixed
+
+- **The numbered task style was invisible.** `speckit-resume` only parsed `- [ ] T003`; a spec
+  written as `3. `[x]` …` (timeline-game `specs/006`) reported **every** task as outstanding, and
+  `speckit-resume` on such a spec printed `RESUME T1` forever. Both styles now parse.
+- **`withdrawn` stranded a resume.** A task recorded `withdrawn` was not counted as resolved, so
+  the resume point stuck on it for good — live in timeline-game `specs/002-modelled-timeline`.
+- **A `"0"` argument was truthy.** `strict = sys.argv[4]` made every resume strict regardless of
+  the flag, because any non-empty string is true in Python.
+- **The ledger identity check compared strings.** `speckit-verify` writes `plan.md` when run inside
+  the spec dir; the check then refused that ledger as another plan's evidence. It now compares
+  resolved paths.
+- **Task ids lost their padding** (`T003` resumed as `T3`) once the numbered style was added.
+
 ## [1.14.0] — 2026-10-21
 
 ### Fixed — a skipped section could read as a passing one
