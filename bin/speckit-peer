@@ -1,0 +1,148 @@
+#!/usr/bin/env bash
+# speckit-peer — fetch a peer repository into .scratch/peers/ at a pinned commit.
+#
+# WHY THIS EXISTS
+# Several rules in this kit were checked against a peer repository rather than against prose: a claim
+# about "what CiteKit's pipeline does" is checkable only if the checkout that was read can be
+# obtained again. The clone is therefore recorded as a URL plus a commit, and this script turns that
+# pair back into a directory.
+#
+# WHY THE CLONE IS NOT COMMITTED
+# A peer is read, not vendored: committing it would duplicate someone else's history, pin this repo
+# to their bugs, and make every adopter carry code they did not ask for. `.scratch/` is gitignored for
+# that reason (see .gitignore). What is committed is the *reference* — url and revision — which is
+# what a reader actually needs to repeat the reading.
+#
+# WHY A COMMIT AND NOT A BRANCH
+# `main` moves. A note that says "read at the pinned copy" and a clone that quietly follows `main`
+# would drift apart, and the drift is invisible in the note. `--rev` overrides the pin when a newer
+# revision has to be read; the notes then cite that revision, as docs/research/ does at 39bd120.
+#
+# WHAT IT NEEDS
+# git, and network access to the URL. Nothing else: no key, no account, no installer.
+#
+# Usage: speckit-peer list
+#        speckit-peer <name> [--rev <sha>] [--update]
+# Exit:  0 on success; 1 on unknown peer, failed clone, or a checkout that cannot be moved to the pin.
+set -uo pipefail
+
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+
+say()  { printf '  %s\n' "$*"; }
+note() { printf '        %s\n' "$*"; }
+err()  { printf '  %s\n' "$*" >&2; }
+
+# --- the peer table ------------------------------------------------------------
+# One line per peer: name, url, pinned revision, then what the checkout is used for. Keep the
+# revision the one the committed note cites, so "pinned" and "cited" cannot disagree.
+PEERS="citekit"
+
+peer_url() { case "$1" in
+  citekit) echo "https://github.com/watanabefam/citekit" ;;
+  *) return 1 ;;
+esac; }
+peer_rev() { case "$1" in
+  citekit) echo "39bd120" ;;
+  *) return 1 ;;
+esac; }
+peer_use() { case "$1" in
+  citekit) echo "scholarly search, six keyless sources, no account" ;;
+  *) return 1 ;;
+esac; }
+peer_run() { case "$1" in
+  citekit) echo 'node tools/search.mjs "<query>" --per 5 --json' ;;
+  *) return 1 ;;
+esac; }
+peer_probe() { case "$1" in
+  citekit) echo "tools/search.mjs" ;;
+  *) return 1 ;;
+esac; }
+
+list_peers() {
+  say "peer     pinned    what it is for"
+  for p in $PEERS; do
+    printf '  %-8s %-9s %s\n' "$p" "$(peer_rev "$p")" "$(peer_use "$p")"
+  done
+  note "clones land in .scratch/peers/ (gitignored). --rev <sha> reads a different revision."
+}
+
+for arg in "$@"; do
+  case "$arg" in
+    --help|-h) sed -n '2,30p' "$0" | sed 's/^# \{0,1\}//'; exit 0 ;;
+  esac
+done
+
+# Parse positionally: the first non-flag word is the peer name, `--rev` takes the next word.
+NAME=""
+REV=""
+UPDATE=0
+while [ "$#" -gt 0 ]; do
+  case "$1" in
+    list) NAME="list"; shift ;;
+    --update) UPDATE=1; shift ;;
+    --rev) REV="${2:-}"; [ -n "$REV" ] || { err "--rev needs a commit"; exit 1; }; shift 2 ;;
+    --rev=*) REV="${1#--rev=}"; shift ;;
+    -*) err "unknown option: $1"; exit 1 ;;
+    *) NAME="$1"; shift ;;
+  esac
+done
+
+[ "$NAME" = "list" ] && { list_peers; exit 0; }
+if [ -z "$NAME" ]; then
+  err "usage: speckit-peer list | speckit-peer <name> [--rev <sha>] [--update]"
+  exit 1
+fi
+
+URL="$(peer_url "$NAME")" || { err "unknown peer: $NAME (known: $PEERS)"; exit 1; }
+PIN="$(peer_rev "$NAME")"
+USE="$(peer_use "$NAME")"
+RUN="$(peer_run "$NAME")"
+PROBE="$(peer_probe "$NAME")"
+[ -n "$REV" ] || REV="$PIN"
+
+DEST="$ROOT/.scratch/peers/$NAME"
+
+if ! command -v git >/dev/null 2>&1; then
+  err "git is not on PATH — it is the only thing this needs"
+  exit 1
+fi
+
+if [ -d "$DEST/.git" ]; then
+  HAVE="$(git -C "$DEST" rev-parse --short HEAD 2>/dev/null || echo unknown)"
+  if [ "$HAVE" = "$REV" ]; then
+    say "ok    $NAME already at $REV"
+  elif [ "$UPDATE" -eq 1 ]; then
+    if git -C "$DEST" fetch -q origin 2>/dev/null && git -C "$DEST" checkout -q "$REV" 2>/dev/null; then
+      say "ok    $NAME moved $HAVE -> $REV"
+    else
+      err "$NAME is at $HAVE and could not be moved to $REV (fetch it by hand?)"
+      exit 1
+    fi
+  else
+    say "skip  $NAME is already cloned at $HAVE (pinned $REV) — --update to move it"
+    note "reading $HAVE is fine; cite the revision you actually read."
+  fi
+else
+  mkdir -p "$(dirname "$DEST")"
+  if ! git clone -q "$URL" "$DEST"; then
+    err "could not clone $URL"
+    note "no network, or a private repo without credentials; nothing was left behind."
+    rm -rf "$DEST"
+    exit 1
+  fi
+  if ! git -C "$DEST" checkout -q "$REV" 2>/dev/null; then
+    err "cloned $NAME but could not check out $REV"
+    note "the revision may be on a branch this clone did not fetch."
+    exit 1
+  fi
+  say "ok    cloned $NAME to .scratch/peers/$NAME at $REV"
+fi
+
+if [ -f "$DEST/$PROBE" ]; then
+  say "use   $USE"
+  note "cd .scratch/peers/$NAME && $RUN"
+else
+  err "$NAME is present but $PROBE is missing — that is not the revision the notes cite"
+  exit 1
+fi
+exit 0

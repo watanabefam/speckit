@@ -1926,8 +1926,13 @@ else
   if bash -n "$MCPBIN"; then ok "bin/speckit-mcp parses"; else bad "bin/speckit-mcp has a syntax error"; fi
   # THE CONTRACT THAT MATTERS: with no CiteKit present this must SKIP and still exit 0. An
   # optional integration that can fail an install is worse than the integration it adds.
+  # Isolate the whole search, not just $HOME. An in-repo checkout (.scratch/peers/citekit) is now a
+  # legitimate hit, so "absent" has to mean a script whose own root has no peer either — otherwise
+  # this fixture would pass or fail depending on what happens to be cloned beside the kit.
   _noKit="$(mktemp -d)"
-  _out="$(HOME="$_noKit" bash "$MCPBIN" 2>&1)"; _rc=$?
+  mkdir -p "$_noKit/pkg/bin"
+  cp "$MCPBIN" "$_noKit/pkg/bin/speckit-mcp"
+  _out="$(HOME="$_noKit/home" bash "$_noKit/pkg/bin/speckit-mcp" 2>&1)"; _rc=$?
   if [ "$_rc" = "0" ] && printf '%s' "$_out" | grep -q 'skip'; then
     ok "skips cleanly when CiteKit is absent, and exits 0"
   else
@@ -1944,6 +1949,39 @@ else
     ok "speckit-init offers --no-mcp (opting out is possible)"
   else
     bad "speckit-init has no --no-mcp opt-out"
+  fi
+  # The false limitation this kit wrote twice ("CiteKit is not available") came from searching only
+  # under $HOME, so an in-repo checkout read as absent. The search order is the fix; this is the pin.
+  if grep -q '.scratch/peers/citekit' "$MCPBIN"; then
+    ok "speckit-mcp searches for an in-repo CiteKit checkout"
+  else
+    bad "speckit-mcp only looks under \$HOME — an in-repo checkout would read as 'not installed'"
+  fi
+fi
+
+hdr "1h2. a peer reading is reproducible: url and revision, not a branch"
+# docs/research/ cites peer repositories at named commits ("read at 39bd120"). A citation that
+# cannot be turned back into a checkout is a claim nobody can re-check, so the pair lives in a tool.
+PEERBIN="$ROOT/bin/speckit-peer"
+if [ ! -f "$PEERBIN" ]; then
+  bad "bin/speckit-peer is missing — every peer citation is unreproducible"
+else
+  if bash -n "$PEERBIN"; then ok "bin/speckit-peer parses"; else bad "bin/speckit-peer has a syntax error"; fi
+  if _pout="$(bash "$PEERBIN" list 2>&1)" && printf '%s' "$_pout" | grep -q 'citekit'; then
+    ok "the peer table names citekit with a pinned revision"
+  else
+    bad "bin/speckit-peer list did not name citekit"
+  fi
+  if bash "$PEERBIN" --help >/dev/null 2>&1; then
+    ok "bin/speckit-peer --help exits 0"
+  else
+    bad "bin/speckit-peer --help failed"
+  fi
+  # An unknown name must be refused: a fetch tool that guesses a URL is worse than one that stops.
+  if bash "$PEERBIN" nosuchpeer >/dev/null 2>&1; then
+    bad "bin/speckit-peer accepted an unknown peer"
+  else
+    ok "an unknown peer is refused, not fetched from a guessed URL"
   fi
 fi
 

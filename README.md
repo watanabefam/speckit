@@ -22,6 +22,7 @@ using Spec Kit's own extension points rather than forking it.
 | `commands/speckit.quick.md` | Installer-copied command | The fast lane for small work — a preset cannot create a command, so the installer copies it |
 | `bin/speckit-init` | Installer | One command to set a project up |
 | `bin/speckit-resume` | Kit tool | Computes the resume point from the ledger, so the resume rule is asserted, not interpreted |
+| `bin/speckit-peer` | Kit tool | Fetches a peer repository into `.scratch/peers/` at the commit a research note cites, so "read at `39bd120`" can be reproduced. The clone is never committed — the url and revision are |
 | `evals/` | Skill evaluations | Behaviour evals + **trigger-accuracy evals** (the failure mode that's silent) |
 | `scripts/self-gate.sh` + `.github/workflows/` | CI | The kit gates itself on every push, on Linux **and** macOS bash 3.2 |
 

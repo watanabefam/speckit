@@ -32,6 +32,8 @@
 #       would be worse than the missing integration.
 set -uo pipefail
 
+HERE="$(cd "$(dirname "$0")/.." && pwd)"
+
 say()  { printf '  %s\n' "$*"; }
 note() { printf '        %s\n' "$*"; }
 
@@ -42,21 +44,34 @@ for arg in "$@"; do
 done
 
 # --- 1. detect CiteKit ---------------------------------------------------------
-CANDIDATES="${CITEKIT_HOME:-} $HOME/Documents/GitHub/citekit $HOME/citekit $HOME/src/citekit $HOME/code/citekit"
+# In-repo checkouts come first. A cloud session clones peers into .scratch/peers/ (gitignored, so
+# never committed), and a $HOME-only search cannot see one — which is how "not registered" got
+# misread as "CiteKit is unavailable" in docs/research/verification-tooling-2026-10.md, twice.
+# The search order is: explicit override, then a checkout beside this kit, then the usual homes.
+CANDIDATES="${CITEKIT_HOME:-} $HERE/.scratch/peers/citekit $HERE/.peers/citekit $HOME/Documents/GitHub/citekit $HOME/citekit $HOME/src/citekit $HOME/code/citekit"
 MJS=""
+SEEN=0
 for c in $CANDIDATES; do
   [ -n "$c" ] || continue
+  SEEN=$((SEEN + 1))
   if [ -f "$c/tools/mcp-server.mjs" ]; then MJS="$c/tools/mcp-server.mjs"; break; fi
 done
 
 if [ -z "$MJS" ]; then
-  say "skip  CiteKit not found — nothing to register (set CITEKIT_HOME to its repo to enable this)"
+  # Say what is absent, and what is *not* absent, because the two get conflated: registration is a
+  # convenience for MCP clients. CiteKit's CLI reaches six of its nine sources with no server and no
+  # key, so an agent in a shell-only environment can still run every query this kit records.
+  say "skip  no CiteKit checkout in $SEEN place(s) — nothing to register"
+  note "this concerns the MCP server only; the CLI needs no server and no key."
+  note "to fetch a pinned checkout:  bin/speckit-peer citekit"
+  note "or point CITEKIT_HOME at a repo containing tools/mcp-server.mjs"
   exit 0
 fi
 
 # --- 2. prerequisites ---------------------------------------------------------
 if ! command -v node >/dev/null 2>&1; then
   say "skip  CiteKit found at $MJS but node is not on PATH (the MCP server needs Node 18+)"
+  note "its CLI needs node too, so this is the one thing worth fixing first."
   exit 0
 fi
 if ! command -v opencode >/dev/null 2>&1; then
