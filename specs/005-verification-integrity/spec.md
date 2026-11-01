@@ -510,7 +510,7 @@ without its own spec.
 
 ## Validation Plan
 
-- **Automated** — `python3 evals/fixtures/verify/harness.py --all`: 16 cases and 11 properties,
+- **Automated** — `python3 evals/fixtures/verify/harness.py --all`: 19 cases and 12 properties,
   including the vacuity fixtures and their negative controls. `bash scripts/self-gate.sh` asserts the
   engine, ledger and harness are present and that the fixture corpus covers the vacuity cases.
 - **Measurement** — `evals/measure-sc004.py`: the change-scoped cost claim, 7 interleaved pairs at

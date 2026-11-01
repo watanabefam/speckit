@@ -525,3 +525,85 @@ specs now point at this section. Each line says what was wrong and what replaces
 - OWASP DevSecOps Guideline — *Security Gates* (`trufflehog … --only-verified --fail`)
 - Codecov — *patch coverage*; `Bachmann1234/diff_cover` (coverage report + diff)
 - git-push(1) / git-update-ref(1) — conditional ref updates as the claim substrate
+
+---
+
+## 13. What the scholarly lane could not answer (2026-10-28)
+
+Feature 005's declared-count rule (`decisions/0011`) made two claims that rest on sources, and one of them
+was recorded as a negative: *CiteKit's scholarly lane had nothing to say about either question.* A negative
+that is not written down is indistinguishable from a search nobody ran, so this section records the
+questions, the queries, the date, and what came back — and, following PRISMA-S item 7 below, names the source
+and the date rather than summarising it as "we looked".
+
+**Status of the source, stated first.** CiteKit's MCP server is **not present in this environment**:
+`bin/speckit-mcp` detects it and skips with a reason (its own contract — an optional integration must never
+fail an install). The 2026-10 pass quoted in `decisions/0011` ran against the nine-source pipeline on the
+author's machine. For this section the lane's widest source, **OpenAlex**, was queried directly on
+**2026-10-28**, so the claim below is about the corpus the pipeline reads, not about CiteKit's ranking.
+
+### Search record
+
+The shape below is the one `scripts/check-search-record.py` enforces (`decisions/0012`): one row per search
+that was run, with the four facts a reader needs to repeat it — where, when, with which words, and what came
+back. A row that says only "nothing found" would satisfy the eye and fail the check.
+
+| # | Question asked of the literature | Source | Date | Query | Hits | What came back |
+|---|---|---|---|---|---|---|
+| 1 | How does a test producer declare how many units it examined, and what should a consumer do with two disagreeing declarations? | OpenAlex works API | 2026-10-28 | `test runner output parsing count` | 3 243 | parsers for biological dependency graphs, semantic parsing, a funding paper ("Fund the runners-up"). **Nothing about declared test counts.** |
+| 2 | How should a project record a search that returned nothing, so the next reader can trust it? | OpenAlex works API | 2026-10-28 | `reporting negative results search strategy reproducibility` | 518 059 | the top hit is on point — *Systematic review search strategies are poorly reported and not reproducible* (J Clin Epidemiol 2023). The rest are 2009–2024 reporting-quality studies in the same field. |
+
+**What this settles.** Question 1 remains unanswered by the scholarly lane, matching the 2026-10 pass: the
+corpus is education and biomedicine, and the closest record there (Gyori 2017) is about *test outcome
+reliability*, not about how a runner states a count. Question 2 **is** answered, but by metaresearch on
+search reporting rather than by software engineering: the 2023 cross-sectional study found search strategies
+"poorly reported and not reproducible" at scale, which is the empirical case for writing down source, date,
+query and result rather than the conclusion alone.
+
+The two sources that actually govern the rule are specifications, not papers:
+
+- **TAP** (`testanything.org/tap-specification.html`, read 2026-10-28): the plan "must appear once"; it "cannot
+  appear in the middle of the output, nor can it appear more than once". That is the licence for treating two
+  `examined=` lines as an error rather than a number to pick from.
+- **PRISMA-S** (Rethlefsen et al. 2021, `doi:10.1186/s13643-020-01542-z`): item 7 — describe all information
+  sources *and date last searched*; item 8 — present the full strategy "such that it could be repeated"; item
+  17 — give numbers screened with reasons for exclusions.
+
+**One deliberate divergence from TAP, recorded so it is a decision and not an oversight.** TAP treats
+`1..0 # SKIP` as a legal empty plan. This kit does not: `examined=0` is reported as `no-items` and never green,
+because 005's premise is that a suite which examined nothing is not evidence, whether it was skipped or not
+(`decisions/0010`). A TAP consumer would call that run "skipped"; this engine calls it "not a result".
+
+**What this does not claim.** OpenAlex's hit counts are full-text match counts, not counts of relevant
+records — 518 059 is the size of a haystack, not a body of evidence, and must never be quoted as "N studies
+show". A null from a corpus outside software engineering is weak evidence about software engineering: it says
+these questions were not asked *there*, not that the field has never answered them. And nothing here checks
+whether a reader acts on the record; it only makes the record checkable.
+
+### Correction (2026-10-31): the lane was reachable; the note above inferred otherwise
+
+Everything this section says about the searches is accurate — the two OpenAlex queries were run as recorded on
+2026-10-28. What was wrong is the step from "the MCP server is not registered" to "CiteKit is not available". It
+is not available *by that route*: a checkout sits at `.scratch/peers/citekit`, and `node tools/search.mjs` drives
+the same six keyless adapters with no server, no browser and no key.
+
+That is the failure CiteKit's own `skills/evidence-search/SKILL.md` warns about — *"Do not report 'CiteKit needs a
+browser, so an agent cannot use it' without opening `tools/`"* — recorded here unsoftened, because the alternative
+is a research note whose stated limitation was never tested. It was caught when the user named the checkout's
+path, not by the method in this section.
+
+Re-run 2026-10-31 at `39bd120` (`--per 5`, `--no-enrich`): the same questions returned 30, 28 and 23 records over
+openalex, crossref, epmc, pubmed, eric and doaj. Nothing in them changed this section's conclusion — the corpus
+still says nothing about declared test counts — so `decisions/0011` stands as written. The rows and the corrected
+status are in `docs/research/search-record-2026-10-31.md`.
+
+### Sources added by this section
+
+- *Systematic review search strategies are poorly reported and not reproducible: a cross-sectional
+  metaresearch study* — `doi:10.1016/j.jclinepi.2023.111229` (title, year and DOI read from OpenAlex,
+  2026-10-28; the paper itself was not fetched)
+- Rethlefsen et al. 2021, PRISMA-S — `doi:10.1186/s13643-020-01542-z`; items 7, 8 and 17 read at PMC8270366
+- TAP specification — plan line must appear once, and cannot appear twice (`testanything.org`), read 2026-10-28
+- OpenAlex works API — two queries above, 2026-10-28; unkeyed, so shared daily budget
+- `watanabefam/citekit` `39bd120` — `tools/search.mjs` run 2026-10-31 for the correction above; peer checkout at
+  `.scratch/peers/citekit`, six keyless sources

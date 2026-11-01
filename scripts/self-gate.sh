@@ -1752,6 +1752,88 @@ PLANSURFACES
   fi
 fi
 
+hdr "3f2. search records — a null search is recorded in a checkable shape"
+# 0012: a note that says "the literature had nothing" is indistinguishable from a note nobody searched for,
+# unless it says where, when, with which words, and what came back. The corpus is this repository's own
+# research notes in the mode they were written under (optional), and the six fixtures carry the failure
+# shapes — a checker that accepted everything would otherwise look exactly like a clean corpus.
+CSR="$ROOT/scripts/check-search-record.py"
+CSR_INST="$ROOT/.specify/scripts/check-search-record.py"
+if [ -f "$CSR" ]; then
+  ok "scripts/check-search-record.py present"
+  if [ -x "$CSR" ]; then ok "the search-record checker is executable"; else bad "the search-record checker is not executable"; fi
+else
+  bad "scripts/check-search-record.py is missing — the null-record rule is prose-only again"
+fi
+if [ -f "$CSR_INST" ] && cmp -s "$CSR" "$CSR_INST"; then
+  ok "the installed search-record check matches the source"
+else
+  bad "the installed search-record check is missing or stale — bin/speckit-init did not install it"
+fi
+
+if [ -f "$CSR" ]; then
+  _sr_count=0; _sr_fail=0
+  for _note in "$ROOT"/docs/research/*.md; do
+    [ -f "$_note" ] || continue
+    _sr_count=$((_sr_count + 1))
+    if ! python3 "$CSR" "$_note" >/dev/null 2>&1; then
+      _sr_fail=$((_sr_fail + 1))
+      printf '        %s\n' "$(python3 "$CSR" "$_note" 2>&1 | head -3)"
+    fi
+  done
+  if [ "$_sr_fail" -eq 0 ] && [ "$_sr_count" -gt 0 ]; then
+    ok "all $_sr_count research notes carry a well-formed record where they claim a null"
+  else
+    bad "search records: $_sr_fail of $_sr_count research notes have a malformed record"
+  fi
+
+  # Each failure shape on its own fixture, by name. The reasons matter: "a date is missing" and "the date is
+  # prose" are different repairs.
+  for _probe in "good:0:recorded search" "no-source:1:no source named" \
+                "bad-date:1:is not a YYYY-MM-DD date" "no-query:1:query is empty" \
+                "vacuous:1:nothing was examined"; do
+    _name="${_probe%%:*}"; _rest="${_probe#*:}"; _want="${_rest%%:*}"; _needle="${_rest#*:}"
+    if _out="$(python3 "$CSR" "$ROOT/evals/fixtures/search-record/$_name/note.md" 2>&1)"; then _rc=0; else _rc=$?; fi
+    if [ "$_rc" = "$_want" ] && printf '%s' "$_out" | grep -qF "$_needle"; then
+      ok "search-record fixture '$_name' exits $_want for the stated reason"
+    else
+      bad "search-record fixture '$_name' exited $_rc, expected $_want with '$_needle'"
+    fi
+  done
+
+  # Both halves of "optional": a note without a record passes, and the same note fails when demanded.
+  if python3 "$CSR" "$ROOT/evals/fixtures/search-record/no-section/note.md" >/dev/null 2>&1; then
+    ok "a note with no search record passes — the section is optional"
+  else
+    bad "the checker failed a note for not carrying an optional section"
+  fi
+  if python3 "$CSR" --require-section "$ROOT/evals/fixtures/search-record/no-section/note.md" >/dev/null 2>&1; then
+    bad "--require-section accepted a note with no search record"
+  else
+    ok "--require-section rejects the same note, so the demand still has teeth"
+  fi
+
+  # Teeth on a real note: strip the record from the note that argues for records, and require rejection under
+  # the flag while it still passes without it.
+  _srteeth="$(mktemp -d)"
+  _notefile="$ROOT/docs/research/search-record-2026-10-31.md"
+  if [ -f "$_notefile" ]; then
+    awk 'BEGIN{drop=0} /^## Search record[[:space:]]*$/{drop=1; next} /^## /{drop=0} !drop' \
+      "$_notefile" > "$_srteeth/note.md"
+    if python3 "$CSR" "$_srteeth/note.md" >/dev/null 2>&1; then
+      ok "a real note with its record removed passes — the section is optional"
+    else
+      bad "the checker failed a real note for not carrying an optional section"
+    fi
+    if python3 "$CSR" --require-section "$_srteeth/note.md" >/dev/null 2>&1; then
+      bad "--require-section accepted a real note with its record removed"
+    else
+      ok "--require-section rejects the same note, so the demand still has teeth"
+    fi
+  fi
+  rm -rf "$_srteeth"
+fi
+
 hdr "3g. negative control — the check's teeth are demonstrated, not assumed"
 # Feature 005 says a test check with no negative control is vacuous (FR-005), and the manifest now
 # declares one. This section holds that declaration to its meaning rather than to its presence: the

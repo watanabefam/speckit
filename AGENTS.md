@@ -29,6 +29,11 @@ the section's absence, and where it exists checks that it covers every identifie
 at the design, and glosses every listed term — it cannot check whether the explanation is right, so
 that part is still yours. Add `--require-section` to demand one everywhere.
 
+**Record a search that found nothing.** When a lane returns nothing and a claim rests on it, say where, when,
+with which words and what came back, in a `## Search record` table (`decisions/0012`);
+`python3 .specify/scripts/check-search-record.py <note>` checks those four facts, and tolerates a note that
+carries no record unless you pass `--require-section`.
+
 ## Two rules that are enforced, not advised
 
 `.opencode/hook/hooks.yaml` (requires the `opencode-yaml-hooks` plugin) runs below the prompt layer,

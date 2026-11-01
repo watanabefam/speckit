@@ -216,7 +216,7 @@ FR-001…FR-013 of this spec; nothing in 001–006 changes. 005's FR-034 is unto
 
 ### Existing Tests
 
-- `evals/fixtures/verify/harness.py` (17 cases, 12 properties) drives the verification engine.
+- `evals/fixtures/verify/harness.py` (19 cases, 12 properties) drives the verification engine.
 - `scripts/self-gate.sh` asserts preset composition, prepend content, install idempotency, and the
   conformance baseline.
 - No test currently reads prose quality; nothing exists to extend, so this feature adds a corpus.

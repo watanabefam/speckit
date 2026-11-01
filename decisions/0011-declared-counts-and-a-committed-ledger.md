@@ -43,7 +43,9 @@ and it is the semantic 005 already has in reading (sort by timestamp) and checki
 on either question — it is an education/biomed corpus, and its hits for "parsing test runner output" were
 off-topic (the closest, Gyori 2017, is about *test outcome reliability and flakiness*, not count extraction).
 Recording that instead of dressing an unrelated record as support. The web lane surfaced the git and TAP
-sources above; `docs/research/verification-tooling-2026-10.md` already carries the counting/vacuity background.
+sources above; `docs/research/verification-tooling-2026-10.md` already carries the counting/vacuity background,
+and its §13 now records what was asked of the scholarly lane, what it returned, and what answered instead — an
+unrecorded null result is indistinguishable from a search nobody ran.
 
 These agree with feature 005's standing invariant — *never invent a count* — and they settle the two shapes
 below without adding a third mechanism.

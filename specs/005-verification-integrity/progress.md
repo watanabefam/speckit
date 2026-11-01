@@ -80,6 +80,7 @@ Task 74: complete (quickstart scenarios: the engine, ledger, mutation and pass^k
 Task 75: complete (`SELF-GATE: PASS  examined=N assertion(s)`; N > 0, and a run that asserts nothing fails (FR-001))
 Task 76: complete (this file; `bin/speckit-resume specs/005-verification-integrity` prints COMPLETE only when every task has a line)
 Task 78: complete (amendment FR-044, `decisions/0011`: `harness.py --case make-declared` asserts that a declared count is read, that a runner summary is still used when nothing is declared, that a declaration is preferred when both appear, that `examined=0` is never green, and that two declarations are reported as unknown rather than reconciled; the case fails against the pre-amendment adapter (checked by running it on `git show HEAD:bin/speckit-verify`); `runner: make` on `make test` reports `examined=218` and PASS ([SC-001]))
+Task 79: complete (the same contract now runs against the `command` adapter, not only `make`: `harness.py --case command-declared` exercises all five declared-count rows through the fallback branch an adopter reaches without choosing it; the two cases call one shared `declared_contract()` so the assertions cannot drift apart ([SC-001]))
 Task 77: complete (amendment FR-043: `harness.py --case coverage-silence` and `--property P-013` pass; both fail against an engine that classifies silence as unexercised, checked by reverting that one branch ([SC-008]))
 
 ## Not claimed
@@ -160,3 +161,11 @@ reading that silence as "no test reaches it".
 
 Until that lands, FR-034's existing prohibition is the only guard, and it guards the profile rather than
 the report.
+
+## Search records made checkable (2026-10-31)
+
+`decisions/0011` cited §13's null result by hand; nothing made the next one take that shape. The four facts a reader needs
+(source, date, query, result) are now fixed by `decisions/0012`, checked by `scripts/check-search-record.py`
+on the `docs/research/` corpus, and asserted on six fixtures in gate §3f2 — including both halves of the
+opt-in contract. §13 and the note that argues for the shape (`docs/research/search-record-2026-10-31.md`) both
+satisfy it, so the rule has no pre-existing exception.

@@ -409,6 +409,11 @@ the section's absence, and where it exists checks that it covers every identifie
 at the design, and glosses every listed term — it cannot check whether the explanation is right, so
 that part is still yours. Add `--require-section` to demand one everywhere.
 
+**Record a search that found nothing.** When a lane returns nothing and a claim rests on it, say where, when,
+with which words and what came back, in a `## Search record` table (`decisions/0012`);
+`python3 .specify/scripts/check-search-record.py <note>` checks those four facts, and tolerates a note that
+carries no record unless you pass `--require-section`.
+
 ## Two rules that are enforced, not advised
 
 `.opencode/hook/hooks.yaml` (requires the `opencode-yaml-hooks` plugin) runs below the prompt layer,
@@ -668,6 +673,27 @@ if [ -f "$CPT_SRC" ]; then
   else
     cp "$CPT_SRC" "$CPT_DST"; chmod +x "$CPT_DST"
     say "updated .specify/scripts/check-plain-terms.py to the current version"
+  fi
+fi
+
+# --- 7c. Search-record check (referenced by the gate and by decisions/0012) -----
+# A note that says "the literature had nothing" is only checkable if it says where, when, with which
+# words, and what came back. Shipping the shape without the checker would hand adopters a table nobody
+# validates, which is how a record becomes a ritual — the same argument as 7b, so it travels the same
+# way: installed here, checked by the gate, never hand-edited in the generated tree.
+CSR_SRC="$KIT_ROOT/scripts/check-search-record.py"
+CSR_DST="$ROOT/.specify/scripts/check-search-record.py"
+if [ -f "$CSR_SRC" ]; then
+  mkdir -p "$ROOT/.specify/scripts"
+  if [ ! -f "$CSR_DST" ]; then
+    cp "$CSR_SRC" "$CSR_DST"; chmod +x "$CSR_DST"
+    say "installed .specify/scripts/check-search-record.py (used when a note records a null search)"
+  elif cmp -s "$CSR_SRC" "$CSR_DST"; then
+    chmod +x "$CSR_DST"
+    say "search-record check already current"
+  else
+    cp "$CSR_SRC" "$CSR_DST"; chmod +x "$CSR_DST"
+    say "updated .specify/scripts/check-search-record.py to the current version"
   fi
 fi
 
