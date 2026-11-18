@@ -74,12 +74,20 @@ import os, re, sys
 tasks_path, ledger_path, spec_dir = sys.argv[1], sys.argv[2], sys.argv[3]
 
 # Task order comes from tasks.md; ids are matched numerically so `T003` and `Task 3`
-# are the same task.
+# are the same task. Two task styles are read, because hand-written specs use the
+# second one and it was invisible here: a spec written as `3. `[x]` …` (a real one,
+# timeline-game `specs/006`) reported EVERY task as outstanding, so the resume point
+# sat at T001 forever. The id keeps the padding the spec used, because callers grep it.
+TASK_RE = re.compile(
+    r"^\s*(?:[-*]\s+)?`?\[[ xX]\]`?\s*T?(\d+)\b"   # - [ ] T003   /  - `[x]` T3
+    r"|^\s*(\d+)\.\s+`?\[[ xX]\]`?"                # 3. [x] ...  /  3. `[x]` ...
+)
 tasks = []
 for line in open(tasks_path, encoding="utf-8"):
-    m = re.match(r"\s*- \[[ xX]\] (T(\d+))\b", line)
+    m = TASK_RE.match(line)
     if m:
-        tasks.append((int(m.group(2)), m.group(1)))
+        raw = m.group(1) or m.group(2)
+        tasks.append((int(raw), "T" + raw))
 
 # Identity first: a ledger that names a DIFFERENT plan is not evidence about this one.
 # Backward compatible — a ledger with no header still resumes (older projects), but a
@@ -94,10 +102,19 @@ if os.path.exists(ledger_path):
             if m:
                 declared = m.group(1).strip()
                 expected = os.path.normpath(os.path.join(spec_dir, "plan.md"))
-                if os.path.isabs(declared):
-                    same = os.path.realpath(declared) == os.path.realpath(expected)
-                else:
-                    same = os.path.normpath(declared) == expected
+                # Compare RESOLVED paths, and try the declared path against both the
+                # current directory and the spec directory. A string compare made this
+                # depend on where the caller stood: a ledger written with `plan.md` (the
+                # form you get when the writer ran inside the spec dir) was refused as
+                # "another plan's evidence" when resumed from elsewhere.
+                got = os.path.realpath(
+                    declared if os.path.isabs(declared)
+                    else os.path.join(os.getcwd(), declared)
+                )
+                want = os.path.realpath(expected)
+                same = got == want
+                if not same and not os.path.isabs(declared):
+                    same = os.path.realpath(os.path.join(spec_dir, declared)) == want
                 if not same:
                     print(
                         "ledger names %s, not %s — refusing to resume (wrong plan's evidence)"
@@ -109,12 +126,19 @@ if os.path.exists(ledger_path):
 
 # Completion comes from the ledger, and only from a `complete` line. A `fix round n/m`
 # line is explicitly not completion.
+#
+# `withdrawn` is also resolved. It was not: a task recorded withdrawn stayed outstanding
+# forever, so the resume point stuck on it and the spec could never finish — live in
+# timeline-game `specs/002`, whose T011 is withdrawn with its reason recorded.
 done = set()
 unbacked = []
 if os.path.exists(ledger_path):
     for line in open(ledger_path, encoding="utf-8"):
-        m = re.match(r"\s*Task (\d+): complete\b", line)
+        m = re.match(r"\s*Task (\d+): (complete|withdrawn)\b", line)
         if m:
+            if m.group(2) == "withdrawn":
+                done.add(int(m.group(1)))
+                continue
             done.add(int(m.group(1)))
             # "complete" alone is a claim. Evidence is the parenthesised reason. Warn, do
             # not fail: older ledgers predate the convention, and stranding a resume would
