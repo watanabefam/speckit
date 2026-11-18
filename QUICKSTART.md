@@ -16,12 +16,12 @@ Skip this if you are reading this inside a checkout of the kit.
 
 ```bash
 KIT="$(mktemp -d)/kit"
-curl -fsSL https://github.com/watanabefam/speckit-kit/archive/refs/heads/main.tar.gz \
+curl -fsSL https://github.com/watanabefam/speckit/archive/refs/heads/main.tar.gz \
   | tar xz -C "$(dirname "$KIT")"
-KIT="$(dirname "$KIT")/speckit-kit-main"
+KIT="$(dirname "$KIT")/speckit-main"
 ```
 
-No git required. If `curl` is unavailable, use `git clone https://github.com/watanabefam/speckit-kit`
+No git required. If `curl` is unavailable, use `git clone https://github.com/watanabefam/speckit`
 and point `KIT` at the clone.
 
 **1. Make sure the Spec Kit CLI is available.**

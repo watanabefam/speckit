@@ -1,17 +1,17 @@
 {
   "integration": "opencode",
-  "version": "1.0.13",
-  "installed_at": "2026-10-03T15:13:41.286159+00:00",
+  "version": "1.2.6",
+  "installed_at": "2026-11-03T01:16:19.171105+00:00",
   "files": {
     ".opencode/commands/speckit.analyze.md": "91fe16257ededdea9cc21d3cb27d539fcdd12d93ddcea52332cd4b68176b6a8d",
     ".opencode/commands/speckit.clarify.md": "dd11eb5b9759f7d3cd18c9d7f23a0ae2fe7973fc6ca2486dbfaf53a5569224b1",
-    ".opencode/commands/speckit.constitution.md": "9a7e9296f0878cdf4ed011b0de74cfb3656938680b64e43e808553fdfd054efc",
-    ".opencode/commands/speckit.implement.md": "e036ce63702db93e656e1c91ee6c02a8dc3d4a4f8624f8ba4adc69027fe68983",
-    ".opencode/commands/speckit.converge.md": "3cb55244c9dc5b9bf52ee3127ba177c52cabd5e5e5197e1312497b3eaeb8b9a4",
-    ".opencode/commands/speckit.plan.md": "3be8b011db9c6bb1cc77037f7d90756a6dbcbda1995cda2192818385732b27ff",
+    ".opencode/commands/speckit.constitution.md": "04d2c31322a52f6a6ae4a2ec342373fe750da693eec1079d2b8d16da14639ee2",
+    ".opencode/commands/speckit.implement.md": "171a781f150e5c4100a302163e96e953a705a6c325a657a1639813aa83c7b5e4",
+    ".opencode/commands/speckit.converge.md": "36e9da4cb643825b8447f924746380dc0e68a4fb19fa9974901c2d9b72cc7c1d",
+    ".opencode/commands/speckit.plan.md": "9126afe85bf49a7beb2be5bcf967206e4820e8ad75f0387e5312b329d182d9a5",
     ".opencode/commands/speckit.checklist.md": "fa58b19e2604ce56ff5f5427061f6ee94fd44d7194e740b874824d9bf21ee15b",
-    ".opencode/commands/speckit.specify.md": "21634a45dfcf642fddb1645f4ad2980f98c89778442e47663df8a6c3a1eaf8bc",
-    ".opencode/commands/speckit.tasks.md": "6754ae39649c8e73a5ed376ad5cfcf04422e321a10e07c5ccd92fd1b9bccf776",
-    ".opencode/commands/speckit.taskstoissues.md": "3c7520a0294a435fa678520b695b11bd7575f0c15da89c418e50abd763677345"
+    ".opencode/commands/speckit.specify.md": "341e2f729bd42f0eb99164f00ab330c389772b35e2ae418805ae621bfe98ead9",
+    ".opencode/commands/speckit.tasks.md": "7e33e7fabc65daed92f9afac20f07822d166366f141276e77e20cc15eb616a53",
+    ".opencode/commands/speckit.taskstoissues.md": "6a23057adb077af03f6d7c99a8cc3fdfd699ad72975b7d5e1457659732955095"
   }
 }

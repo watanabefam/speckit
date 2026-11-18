@@ -6,7 +6,7 @@ preset:
   version: "1.19.0"
   description: "Appends problem framing, an optional plain-language explanation, traceability, approval boundaries and verification sections to the core spec, plan and task templates without replacing them."
   author: "watanabefam"
-  repository: "https://github.com/watanabefam/speckit-kit"
+  repository: "https://github.com/watanabefam/speckit"
   license: "MIT"
 
 requires:

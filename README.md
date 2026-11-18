@@ -1,4 +1,4 @@
-# speckit-kit
+# speckit
 
 A reusable upgrade layer for [GitHub Spec Kit](https://github.com/github/spec-kit),
 wired for **opencode** and **Freebuff/Codebuff**.
